@@ -78,22 +78,18 @@ export default function Home() {
   };
 
   if (stage === "menu") {
+    const hour = new Date().getHours();
+    const eyebrow =
+      hour >= 21 || hour < 5
+        ? "es hora de descansar"
+        : hour < 12
+          ? "un momento para ti"
+          : "respira un momento";
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center gap-12 overflow-hidden px-8 py-16">
+      <main className="relative flex min-h-screen flex-col items-center justify-center gap-16 overflow-hidden px-8 py-16">
         <div className="ambient" />
-        <div className="menu__bg">
-          <NebulaOrb
-            scale={0.7}
-            phaseMs={5000}
-            dimmed={false}
-            sizeClass="h-[34rem] w-[34rem]"
-          />
-        </div>
-        <header className="rise relative z-10 flex flex-col items-center text-center">
-          <h1 className="wordmark">respira</h1>
-          <p className="wordmark__sub">respira con la luz</p>
-        </header>
-        <div className="relative z-10">
+        <p className="eyebrow rise relative z-10">{eyebrow}</p>
+        <div className="rise relative z-10" style={{ animationDelay: "0.18s" }}>
           <RhythmMenu
             selectedId={selectedId}
             onSelect={setSelectedId}
