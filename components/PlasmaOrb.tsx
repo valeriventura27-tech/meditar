@@ -43,18 +43,19 @@ void main(){
     for(int i=0;i<32;i++){
       vec3 pos=ro+rd*tt;
       vec3 sp=pos; sp.xz=mat2(ca,-sa,sa,ca)*sp.xz;
-      vec3 q=sp*1.7;
-      q+=0.7*vec3(fbm(sp*1.4+vec3(0.0,t,0.0)),
-                  fbm(sp*1.4+vec3(t,1.0,0.0)),
-                  fbm(sp*1.4+vec3(0.0,t*0.7,2.0)));
+      vec3 q=sp*2.1;
+      q+=0.85*vec3(fbm(sp*1.6+vec3(0.0,t,0.0)),
+                   fbm(sp*1.6+vec3(t,1.0,0.0)),
+                   fbm(sp*1.6+vec3(0.0,t*0.7,2.0)));
       float d=fbm(q+vec3(0.0,-t*1.3,0.0));
       float rr=length(pos)/br;
-      float dens=smoothstep(1.0,0.15,rr)*d;
-      dens=pow(max(dens,0.0),1.7)*2.0;
-      float temp=dens*(1.0-rr*0.55);
-      vec3 cc=mix(vec3(0.5,0.02,0.0),vec3(1.0,0.18,0.04),smoothstep(0.0,0.45,temp));
-      cc=mix(cc,vec3(1.0,0.72,0.42),smoothstep(0.55,1.2,temp));
-      float a=dens*0.15;
+      float dens=smoothstep(1.0,0.1,rr)*d;
+      dens=pow(max(dens,0.0),2.4)*2.6; // sparse, defined filaments
+      float temp=dens*(1.0-rr*0.5);
+      // deep blood red -> incandescent red-orange core (never white)
+      vec3 cc=mix(vec3(0.32,0.012,0.0),vec3(0.9,0.12,0.02),smoothstep(0.0,0.5,temp));
+      cc=mix(cc,vec3(1.0,0.42,0.14),smoothstep(0.7,1.4,temp));
+      float a=dens*0.1;
       col+=cc*a*(1.0-alpha);
       alpha+=a*(1.0-alpha);
       if(alpha>0.99) break;
@@ -62,9 +63,17 @@ void main(){
     }
   }
   float dist=length(uv);
-  float glow=exp(-dist*2.6/br)*0.55;
-  col+=vec3(1.0,0.28,0.1)*glow;
-  col=col/(col+vec3(0.55));
+  // tight, restrained bloom (not a fill)
+  float glow=exp(-dist*3.8/br)*0.2;
+  col+=vec3(1.0,0.26,0.09)*glow;
+
+  // exposure + filmic tonemap to keep structure and avoid burn-out
+  col*=0.85;
+  col=vec3(1.0)-exp(-col*1.2);
+
+  // vignette to pure black so the canvas square is never visible
+  col*=smoothstep(1.18,0.42,dist);
+
   col*=(1.0-u_dim);
   gl_FragColor=vec4(col,1.0);
 }
