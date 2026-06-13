@@ -49,10 +49,13 @@ export default function Home() {
   };
 
   const handleStart = async () => {
+    // Create + unlock audio synchronously within the tap (iOS), before the
+    // HRV read can break the user gesture.
+    const audio = createSessionAudio();
+    audioRef.current = audio;
     const chosen = await resolveRhythm();
     setRhythm(chosen);
-    audioRef.current = createSessionAudio();
-    await audioRef.current.start(totalSeconds);
+    await audio.start(totalSeconds);
     setDimmed(false);
     setStage("running");
   };

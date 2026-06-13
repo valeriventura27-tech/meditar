@@ -39,6 +39,11 @@ export function createSessionAudio(): SessionAudio {
   voice.preload = "auto";
   voice.volume = VOL.voice;
 
+  // iOS only unlocks audio inside the user gesture. createSessionAudio() is
+  // called synchronously from the "Comenzar" tap, so resume here — before any
+  // awaits in the caller can drop the gesture.
+  void ctx.resume();
+
   let stopped = false;
 
   return {
