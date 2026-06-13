@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { NebulaOrb } from "@/components/NebulaOrb";
+import { PlasmaOrb } from "@/components/PlasmaOrb";
 import { PhaseLabel } from "@/components/PhaseLabel";
 import { RhythmMenu, RHYTHM_SHORT } from "@/components/RhythmMenu";
 import { Gauge } from "@/components/Gauge";
@@ -166,7 +166,7 @@ export default function Home() {
         onClick={endEarly}
         className="fade-in relative flex min-h-screen flex-col items-center justify-center"
       >
-        <NebulaOrb
+        <PlasmaOrb
           scale={breathing.scale}
           phaseMs={breathing.phaseMs}
           dimmed={dimmed}
