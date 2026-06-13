@@ -25,3 +25,62 @@ body {
   background: #b3261a;
   color: #cdbfb3;
 }
+
+/* Apple Watch "Breathe"-style bloom of overlapping translucent petals. */
+.petals {
+  position: relative;
+  width: 19rem;
+  height: 19rem;
+  max-width: 86vw;
+  max-height: 86vw;
+  will-change: transform, opacity;
+}
+
+.petals__glow {
+  position: absolute;
+  inset: 14%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 150, 90, 0.35) 0%,
+    rgba(179, 38, 26, 0) 70%
+  );
+  filter: blur(22px);
+}
+
+.petals__spin {
+  position: absolute;
+  inset: 0;
+  animation: petalSpin 46s linear infinite;
+}
+
+.petal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58%;
+  height: 58%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 172, 112, 0.55) 0%,
+    rgba(244, 80, 42, 0.42) 42%,
+    rgba(179, 38, 26, 0) 70%
+  );
+  mix-blend-mode: screen;
+}
+
+@keyframes petalSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .petals__spin {
+    animation: none;
+  }
+}
