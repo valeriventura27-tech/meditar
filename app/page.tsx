@@ -66,20 +66,21 @@ export default function Home() {
 
   if (stage === "menu") {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-12">
-        <h1
-          className="text-2xl tracking-[0.4em]"
-          style={{ color: "#8a7d72" }}
-        >
-          respira
-        </h1>
-        <RhythmMenu
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          minutes={minutes}
-          onMinutes={setMinutes}
-          onStart={handleStart}
-        />
+      <main className="relative flex min-h-screen flex-col items-center justify-center gap-14 px-8 py-16">
+        <div className="ambient" />
+        <header className="rise relative flex flex-col items-center text-center">
+          <h1 className="wordmark">respira</h1>
+          <p className="wordmark__sub">respira con la luz</p>
+        </header>
+        <div className="relative">
+          <RhythmMenu
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            minutes={minutes}
+            onMinutes={setMinutes}
+            onStart={handleStart}
+          />
+        </div>
       </main>
     );
   }
@@ -87,21 +88,21 @@ export default function Home() {
   return (
     <main
       onClick={endEarly}
-      className="flex min-h-screen flex-col items-center justify-center"
+      className="relative flex min-h-screen flex-col items-center justify-center"
     >
       {stage === "running" ? (
-        <>
+        <div className="fade-in flex flex-col items-center">
           <NebulaOrb
             scale={breathing.scale}
             phaseMs={breathing.phaseMs}
             dimmed={dimmed}
           />
           <PhaseLabel phase={dimmed ? null : breathing.phase} />
-        </>
+        </div>
       ) : (
         <p
-          className="text-base tracking-[0.4em]"
-          style={{ color: "#5c5248" }}
+          className="font-serif fade-in text-3xl"
+          style={{ color: "#9a8474", letterSpacing: "0.04em" }}
           onClick={() => setStage("menu")}
         >
           buenas noches

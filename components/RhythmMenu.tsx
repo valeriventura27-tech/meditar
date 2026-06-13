@@ -3,9 +3,16 @@
 import { RHYTHMS } from "@/lib/rhythms";
 
 // Pre-session choices: a rhythm (plus the adaptive option) and a duration.
-// Kept deliberately sparse for night-time, eyes-closing use.
+// Sparse and editorial for night-time, eyes-closing use.
 
 const ADAPTIVE_ID = "adaptativo";
+
+const DESC: Record<string, string> = {
+  coherencia: "equilibrio · por defecto",
+  "478": "para soltar el día",
+  caja: "calma estable",
+  [ADAPTIVE_ID]: "se ajusta a tu HRV",
+};
 
 export function RhythmMenu({
   selectedId,
@@ -22,49 +29,52 @@ export function RhythmMenu({
 }) {
   const options = [
     ...RHYTHMS.map((r) => ({ id: r.id, label: r.label })),
-    { id: ADAPTIVE_ID, label: "Adaptativo (HRV)" },
+    { id: ADAPTIVE_ID, label: "Adaptativo" },
   ];
 
   return (
-    <div className="flex flex-col items-center gap-8 px-8">
-      <div className="flex flex-col gap-2 w-full max-w-xs">
-        {options.map((o) => (
-          <button
-            key={o.id}
-            onClick={() => onSelect(o.id)}
-            className="rounded-full py-3 text-sm tracking-wide transition-colors"
-            style={{
-              color: selectedId === o.id ? "#e09a7a" : "#8a7d72",
-              border: `1px solid ${selectedId === o.id ? "#b3261a" : "#2a211d"}`,
-            }}
-          >
-            {o.label}
-          </button>
-        ))}
+    <div className="flex w-full max-w-xs flex-col items-center gap-10">
+      <div className="w-full">
+        {options.map((o, i) => {
+          const on = selectedId === o.id;
+          return (
+            <button
+              key={o.id}
+              onClick={() => onSelect(o.id)}
+              className={`rise rhythm ${on ? "rhythm--on" : "rhythm--off"}`}
+              style={{ animationDelay: `${0.15 + i * 0.08}s` }}
+            >
+              <span className="rhythm__name">{o.label}</span>
+              <span className="rhythm__desc">{DESC[o.id]}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="flex gap-3">
+      <div
+        className="rise grid w-full grid-cols-3 gap-2"
+        style={{ animationDelay: "0.55s" }}
+      >
         {[5, 10, 30].map((m) => (
           <button
             key={m}
             onClick={() => onMinutes(m)}
-            className="rounded-full px-4 py-2 text-xs transition-colors"
-            style={{
-              color: minutes === m ? "#e09a7a" : "#5c5248",
-              border: `1px solid ${minutes === m ? "#b3261a" : "#2a211d"}`,
-            }}
+            className={`seg ${minutes === m ? "seg--on" : "seg--off"}`}
           >
-            {m} min
+            {m} MIN
           </button>
         ))}
       </div>
 
       <button
         onClick={onStart}
-        className="mt-2 rounded-full px-10 py-4 text-base tracking-widest"
-        style={{ color: "#cdbfb3", border: "1px solid #b3261a" }}
+        className="start rise"
+        style={{ animationDelay: "0.7s" }}
+        aria-label="Comenzar"
       >
-        Comenzar
+        <span className="start__ring" />
+        <span className="start__core" />
+        <span className="start__label">Empezar</span>
       </button>
     </div>
   );

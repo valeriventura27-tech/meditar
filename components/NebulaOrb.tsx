@@ -119,9 +119,10 @@ export function NebulaOrb({
       dim += ((p.dimmed ? 1 : 0) - dim) * 0.03;
       const vis = 1 - dim;
 
-      // Trails: fade the previous frame instead of clearing it.
+      // Trails: fade the previous frame instead of clearing it. A low fade
+      // keeps long, silky streaks.
       ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = `rgba(0,0,0,${0.14 + dim * 0.4})`;
+      ctx.fillStyle = `rgba(0,0,0,${0.09 + dim * 0.4})`;
       ctx.fillRect(0, 0, size, size);
 
       if (vis > 0.01) {

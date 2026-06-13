@@ -10,10 +10,7 @@ const TEXT: Record<PhaseName, string> = {
 
 export function PhaseLabel({ phase }: { phase: PhaseName | null }) {
   return (
-    <p
-      className="mt-16 text-lg tracking-[0.3em] uppercase"
-      style={{ color: "#e09a7a", opacity: phase ? 0.45 : 0 }}
-    >
+    <p className="phase" style={{ opacity: phase ? 0.5 : 0 }}>
       {phase ? TEXT[phase] : " "}
     </p>
   );
