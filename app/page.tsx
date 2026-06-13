@@ -1,13 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NebulaOrb } from "@/components/NebulaOrb";
 import { PhaseLabel } from "@/components/PhaseLabel";
-import { RhythmMenu } from "@/components/RhythmMenu";
+import { RhythmMenu, RHYTHM_SHORT } from "@/components/RhythmMenu";
+import { Gauge } from "@/components/Gauge";
 import { useBreathingEngine } from "@/lib/useBreathingEngine";
 import { RHYTHMS, makeAdaptiveRhythm, type Rhythm } from "@/lib/rhythms";
 import { chooseAdaptiveStart, readOvernightHRV } from "@/lib/health/healthkit";
 import { createSessionAudio, type SessionAudio } from "@/lib/audio/session-audio";
+
+const DESC: Record<string, string> = {
+  coherencia: "el equilibrio",
+  "478": "para soltar el día",
+  caja: "calma estable",
+  adaptativo: "se ajusta a tu HRV",
+};
 
 type Stage = "menu" | "running" | "done";
 
@@ -25,8 +33,15 @@ export default function Home() {
     hrv: number | null;
   } | null>(null);
 
+  const [homeHrv, setHomeHrv] = useState<number | null>(null);
+
   const audioRef = useRef<SessionAudio | null>(null);
   const totalSeconds = minutes * 60;
+
+  // Last night's HRV for the recovery card (null on web / if denied).
+  useEffect(() => {
+    readOvernightHRV().then(setHomeHrv);
+  }, []);
 
   const handleComplete = async () => {
     setDimmed(true);
@@ -79,25 +94,68 @@ export default function Home() {
 
   if (stage === "menu") {
     const hour = new Date().getHours();
-    const eyebrow =
+    const greeting =
       hour >= 21 || hour < 5
-        ? "es hora de descansar"
+        ? "Buenas noches"
         : hour < 12
-          ? "un momento para ti"
-          : "respira un momento";
+          ? "Buenos días"
+          : "Buenas tardes";
+    const dateLabel = new Date().toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center gap-16 overflow-hidden px-8 py-16">
-        <div className="ambient" />
-        <p className="eyebrow rise relative z-10">{eyebrow}</p>
-        <div className="rise relative z-10" style={{ animationDelay: "0.18s" }}>
-          <RhythmMenu
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            minutes={minutes}
-            onMinutes={setMinutes}
-            onStart={handleStart}
-          />
-        </div>
+      <main className="home fade-in">
+        <header className="home__head">
+          <h1 className="home__hi">{greeting}</h1>
+          <p className="home__date">{dateLabel}</p>
+        </header>
+
+        <section className="card hero">
+          <Gauge fill={minutes / 30}>
+            <div className="hero__c">
+              <span className="hero__rhythm">{RHYTHM_SHORT[selectedId]}</span>
+              <span className="hero__num">
+                {minutes}
+                <i className="hero__unit">min</i>
+              </span>
+              <span className="hero__hint">{DESC[selectedId]}</span>
+            </div>
+          </Gauge>
+          <div className="dur">
+            {[5, 10, 30].map((m) => (
+              <button
+                key={m}
+                onClick={() => setMinutes(m)}
+                className={`dur__pill ${minutes === m ? "dur__pill--on" : ""}`}
+              >
+                {m} min
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <RhythmMenu selectedId={selectedId} onSelect={setSelectedId} />
+
+        <section className="card hrv">
+          <span className="card__title">Recuperación</span>
+          {homeHrv != null ? (
+            <div className="hrv__val">
+              <span className="hrv__num">{Math.round(homeHrv)}</span>
+              <span className="hrv__unit">ms · VFC anoche</span>
+            </div>
+          ) : (
+            <p className="hrv__connect">
+              Conecta Salud para ver cómo cada sesión mejora tu descanso.
+            </p>
+          )}
+        </section>
+
+        <button className="cta" onClick={handleStart}>
+          Empezar
+        </button>
       </main>
     );
   }
@@ -121,8 +179,7 @@ export default function Home() {
   // done — soft closing summary
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center">
-      <div className="ambient" />
-      <div className="summary fade-in relative z-10">
+      <div className="summary fade-in">
         <p className="summary__hi">buenas noches</p>
         {summary && (
           <p className="summary__line">

@@ -1,22 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Space_Grotesk } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 
-// Editorial serif for the wordmark + a modern grotesk for the UI.
-const serif = Instrument_Serif({
-  weight: "400",
+// SF Rounded isn't on the web; Nunito is the closest warm, rounded stand-in.
+const rounded = Nunito({
   subsets: ["latin"],
-  variable: "--font-serif",
-  display: "swap",
-});
-const grotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-grotesk",
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-rounded",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "respira",
+  title: "meditar",
   description: "Respira con la luz. Duerme mejor.",
 };
 
@@ -34,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={`${serif.variable} ${grotesk.variable}`}>
+    <html lang="es" className={rounded.variable}>
       <body>{children}</body>
     </html>
   );
