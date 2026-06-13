@@ -9,6 +9,7 @@
 import { createBinaural, type Binaural } from "./binaural";
 import { createOcean, type Ocean } from "./ocean";
 import { detectHeadphones } from "./headphones";
+import type { PhaseName } from "../rhythms";
 
 const VOICE_SRC = "/audio/voz-es.mp3";
 
@@ -22,6 +23,7 @@ const FADE_SECONDS = 20;
 
 export type SessionAudio = {
   start: (totalSeconds: number) => Promise<void>;
+  breathe: (phase: PhaseName, seconds: number) => void;
   fadeOutAndStop: () => Promise<void>;
 };
 
@@ -55,6 +57,11 @@ export function createSessionAudio(): SessionAudio {
       voice.play().catch(() => {
         /* no narration available */
       });
+    },
+
+    breathe(phase: PhaseName, seconds: number) {
+      if (stopped) return;
+      ocean.breathe(phase, seconds);
     },
 
     async fadeOutAndStop() {

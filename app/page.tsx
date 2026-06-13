@@ -34,6 +34,7 @@ export default function Home() {
     totalSeconds,
     stage === "running",
     handleComplete,
+    (phase, seconds) => audioRef.current?.breathe(phase, seconds),
   );
 
   const resolveRhythm = async (): Promise<Rhythm> => {

@@ -19,6 +19,7 @@ export function useBreathingEngine(
   totalSeconds: number,
   running: boolean,
   onComplete: () => void,
+  onPhaseChange?: (phase: PhaseName, seconds: number) => void,
 ): BreathingState {
   const [state, setState] = useState<BreathingState>({
     phase: null,
@@ -34,8 +35,10 @@ export function useBreathingEngine(
   // Keep latest values without re-arming effects every render.
   const rhythmRef = useRef(rhythm);
   const onCompleteRef = useRef(onComplete);
+  const onPhaseChangeRef = useRef(onPhaseChange);
   rhythmRef.current = rhythm;
   onCompleteRef.current = onComplete;
+  onPhaseChangeRef.current = onPhaseChange;
 
   useEffect(() => {
     if (!running) return;
@@ -61,6 +64,7 @@ export function useBreathingEngine(
       lastScale.current = target;
 
       pulseForPhase(phase.name);
+      onPhaseChangeRef.current?.(phase.name, phase.seconds);
       setState((s) => ({
         ...s,
         phase: phase.name,
