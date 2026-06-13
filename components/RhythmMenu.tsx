@@ -2,13 +2,13 @@
 
 import { RHYTHMS } from "@/lib/rhythms";
 
-// Pre-session choices: a rhythm (plus the adaptive option) and a duration.
-// Sparse and editorial for night-time, eyes-closing use.
+// Pre-session choices kept to a whisper: rhythm + duration, no list chrome.
+// Only the active choice is luminous; everything else recedes.
 
 const ADAPTIVE_ID = "adaptativo";
 
 const DESC: Record<string, string> = {
-  coherencia: "equilibrio · por defecto",
+  coherencia: "el equilibrio",
   "478": "para soltar el día",
   caja: "calma estable",
   [ADAPTIVE_ID]: "se ajusta a tu HRV",
@@ -33,8 +33,8 @@ export function RhythmMenu({
   ];
 
   return (
-    <div className="flex w-full max-w-xs flex-col items-center gap-10">
-      <div className="w-full">
+    <div className="flex w-full max-w-sm flex-col items-center gap-9">
+      <div className="flex flex-col items-center gap-1.5">
         {options.map((o, i) => {
           const on = selectedId === o.id;
           return (
@@ -42,17 +42,17 @@ export function RhythmMenu({
               key={o.id}
               onClick={() => onSelect(o.id)}
               className={`rise rhythm ${on ? "rhythm--on" : "rhythm--off"}`}
-              style={{ animationDelay: `${0.15 + i * 0.08}s` }}
+              style={{ animationDelay: `${0.2 + i * 0.07}s` }}
             >
               <span className="rhythm__name">{o.label}</span>
-              <span className="rhythm__desc">{DESC[o.id]}</span>
+              {on && <span className="rhythm__desc">{DESC[o.id]}</span>}
             </button>
           );
         })}
       </div>
 
       <div
-        className="rise grid w-full grid-cols-3 gap-2"
+        className="rise flex items-center gap-7"
         style={{ animationDelay: "0.55s" }}
       >
         {[5, 10, 30].map((m) => (
@@ -61,7 +61,8 @@ export function RhythmMenu({
             onClick={() => onMinutes(m)}
             className={`seg ${minutes === m ? "seg--on" : "seg--off"}`}
           >
-            {m} MIN
+            {m}
+            <span className="seg__u">min</span>
           </button>
         ))}
       </div>
@@ -70,7 +71,7 @@ export function RhythmMenu({
         onClick={onStart}
         className="start rise"
         style={{ animationDelay: "0.7s" }}
-        aria-label="Comenzar"
+        aria-label="Empezar"
       >
         <span className="start__ring" />
         <span className="start__core" />

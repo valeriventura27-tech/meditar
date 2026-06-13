@@ -61,10 +61,12 @@ export function NebulaOrb({
   scale,
   phaseMs,
   dimmed,
+  sizeClass = "h-[24rem] w-[24rem]",
 }: {
   scale: number;
   phaseMs: number;
   dimmed: boolean;
+  sizeClass?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const propsRef = useRef({ scale, phaseMs, dimmed });
@@ -176,7 +178,7 @@ export function NebulaOrb({
   return (
     <canvas
       ref={canvasRef}
-      className="h-[24rem] w-[24rem]"
+      className={sizeClass}
       style={{ maxWidth: "92vw", maxHeight: "92vw" }}
     />
   );

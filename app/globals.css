@@ -67,6 +67,17 @@ body {
   }
 }
 
+/* Living light bleeding behind the whole menu. */
+.menu__bg {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* ---- Entrance choreography ---- */
 @keyframes rise {
   from {
@@ -112,53 +123,115 @@ body {
   color: #7a6a5e;
 }
 
-/* ---- Rhythm list ---- */
+/* ---- Rhythm choice: no chrome, hierarchy by light ---- */
 .rhythm {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  width: 100%;
-  padding: 0.85rem 0.25rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.5rem;
   border: 0;
-  border-bottom: 1px solid rgba(120, 60, 44, 0.16);
   background: transparent;
-  text-align: left;
-  transition: color 0.5s ease, padding-left 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: color 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .rhythm__name {
-  font-size: 1.06rem;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  transition: font-size 0.5s ease;
 }
 .rhythm__desc {
-  font-size: 0.66rem;
-  letter-spacing: 0.16em;
+  font-size: 0.6rem;
+  letter-spacing: 0.34em;
   text-transform: uppercase;
-  opacity: 0.7;
+  color: #8a6a5a;
 }
 .rhythm--on {
-  color: #f0b49a;
-  padding-left: 0.9rem;
-  box-shadow: inset 2px 0 0 0 #f4502a;
+  color: #f5cdb6;
+  transform: scale(1.02);
+}
+.rhythm--on .rhythm__name {
+  font-size: 1.5rem;
+  text-shadow: 0 0 26px rgba(244, 80, 42, 0.4);
 }
 .rhythm--off {
-  color: #6f6358;
+  color: #5a4f46;
+}
+.rhythm--off .rhythm__name {
+  font-size: 0.98rem;
 }
 
-/* ---- Duration segmented ---- */
+/* ---- Duration ---- */
 .seg {
-  font-size: 0.74rem;
-  letter-spacing: 0.18em;
-  padding: 0.4rem 0.1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.22rem;
+  font-size: 1.3rem;
+  letter-spacing: 0.02em;
   background: transparent;
   border: 0;
   transition: color 0.4s ease;
+}
+.seg__u {
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 .seg--on {
   color: #f0b49a;
 }
 .seg--off {
-  color: #5c5248;
+  color: #574d44;
+}
+
+/* ---- Closing summary ---- */
+.summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.6rem;
+  text-align: center;
+  padding: 0 2rem;
+}
+.summary__hi {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(2.4rem, 12vw, 3.4rem);
+  color: #e7c9b5;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 34px rgba(244, 80, 42, 0.3);
+}
+.summary__line {
+  font-size: 0.74rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: #8a7d72;
+}
+.summary__hrv {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+}
+.summary__hrv-val {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 2.6rem;
+  color: #f0b49a;
+}
+.summary__hrv-cap {
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #7a6a5e;
+  max-width: 16rem;
+  line-height: 1.7;
+}
+.summary__dismiss {
+  margin-top: 1.4rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: #6f6054;
+  background: transparent;
+  border: 0;
 }
 
 /* ---- Start button: a breathing ring that invites the first tap ---- */

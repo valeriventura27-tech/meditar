@@ -6,7 +6,7 @@ import { PhaseLabel } from "@/components/PhaseLabel";
 import { RhythmMenu } from "@/components/RhythmMenu";
 import { useBreathingEngine } from "@/lib/useBreathingEngine";
 import { RHYTHMS, makeAdaptiveRhythm, type Rhythm } from "@/lib/rhythms";
-import { chooseAdaptiveStart } from "@/lib/health/healthkit";
+import { chooseAdaptiveStart, readOvernightHRV } from "@/lib/health/healthkit";
 import { createSessionAudio, type SessionAudio } from "@/lib/audio/session-audio";
 
 type Stage = "menu" | "running" | "done";
@@ -19,6 +19,11 @@ export default function Home() {
   const [minutes, setMinutes] = useState(10);
   const [rhythm, setRhythm] = useState<Rhythm>(COHERENCE);
   const [dimmed, setDimmed] = useState(false);
+  const [summary, setSummary] = useState<{
+    minutes: number;
+    rhythmLabel: string;
+    hrv: number | null;
+  } | null>(null);
 
   const audioRef = useRef<SessionAudio | null>(null);
   const totalSeconds = minutes * 60;
@@ -26,6 +31,8 @@ export default function Home() {
   const handleComplete = async () => {
     setDimmed(true);
     await audioRef.current?.fadeOutAndStop();
+    const hrv = await readOvernightHRV();
+    setSummary({ minutes, rhythmLabel: rhythm.label, hrv });
     setStage("done");
   };
 
@@ -64,15 +71,29 @@ export default function Home() {
     if (stage === "running") handleComplete();
   };
 
+  const backToMenu = () => {
+    setSummary(null);
+    setDimmed(false);
+    setStage("menu");
+  };
+
   if (stage === "menu") {
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center gap-14 px-8 py-16">
+      <main className="relative flex min-h-screen flex-col items-center justify-center gap-12 overflow-hidden px-8 py-16">
         <div className="ambient" />
-        <header className="rise relative flex flex-col items-center text-center">
+        <div className="menu__bg">
+          <NebulaOrb
+            scale={0.7}
+            phaseMs={5000}
+            dimmed={false}
+            sizeClass="h-[34rem] w-[34rem]"
+          />
+        </div>
+        <header className="rise relative z-10 flex flex-col items-center text-center">
           <h1 className="wordmark">respira</h1>
           <p className="wordmark__sub">respira con la luz</p>
         </header>
-        <div className="relative">
+        <div className="relative z-10">
           <RhythmMenu
             selectedId={selectedId}
             onSelect={setSelectedId}
@@ -85,29 +106,49 @@ export default function Home() {
     );
   }
 
+  if (stage === "running") {
+    return (
+      <main
+        onClick={endEarly}
+        className="fade-in relative flex min-h-screen flex-col items-center justify-center"
+      >
+        <NebulaOrb
+          scale={breathing.scale}
+          phaseMs={breathing.phaseMs}
+          dimmed={dimmed}
+        />
+        <PhaseLabel phase={dimmed ? null : breathing.phase} />
+      </main>
+    );
+  }
+
+  // done — soft closing summary
   return (
-    <main
-      onClick={endEarly}
-      className="relative flex min-h-screen flex-col items-center justify-center"
-    >
-      {stage === "running" ? (
-        <div className="fade-in flex flex-col items-center">
-          <NebulaOrb
-            scale={breathing.scale}
-            phaseMs={breathing.phaseMs}
-            dimmed={dimmed}
-          />
-          <PhaseLabel phase={dimmed ? null : breathing.phase} />
+    <main className="relative flex min-h-screen flex-col items-center justify-center">
+      <div className="ambient" />
+      <div className="summary fade-in relative z-10">
+        <p className="summary__hi">buenas noches</p>
+        {summary && (
+          <p className="summary__line">
+            {summary.minutes} min · {summary.rhythmLabel}
+          </p>
+        )}
+        <div className="summary__hrv">
+          {summary?.hrv != null ? (
+            <>
+              <span className="summary__hrv-val">{Math.round(summary.hrv)} ms</span>
+              <span className="summary__hrv-cap">tu VFC de anoche</span>
+            </>
+          ) : (
+            <span className="summary__hrv-cap">
+              conecta Salud para ver cómo esta sesión mejora tu descanso
+            </span>
+          )}
         </div>
-      ) : (
-        <p
-          className="font-serif fade-in text-3xl"
-          style={{ color: "#9a8474", letterSpacing: "0.04em" }}
-          onClick={() => setStage("menu")}
-        >
-          buenas noches
-        </p>
-      )}
+        <button className="summary__dismiss" onClick={backToMenu}>
+          descansa
+        </button>
+      </div>
     </main>
   );
 }
