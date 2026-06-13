@@ -29,7 +29,7 @@ export default function Home() {
   const [dimmed, setDimmed] = useState(false);
   const [summary, setSummary] = useState<{
     minutes: number;
-    rhythmLabel: string;
+    rhythmId: string;
     hrv: number | null;
   } | null>(null);
 
@@ -47,7 +47,7 @@ export default function Home() {
     setDimmed(true);
     await audioRef.current?.fadeOutAndStop();
     const hrv = await readOvernightHRV();
-    setSummary({ minutes, rhythmLabel: rhythm.label, hrv });
+    setSummary({ minutes, rhythmId: rhythm.id, hrv });
     setStage("done");
   };
 
@@ -176,32 +176,46 @@ export default function Home() {
     );
   }
 
-  // done — soft closing summary
+  // done — closing summary dashboard, same language as the home
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center">
-      <div className="summary fade-in">
-        <p className="summary__hi">buenas noches</p>
-        {summary && (
-          <p className="summary__line">
-            {summary.minutes} min · {summary.rhythmLabel}
+    <main className="home fade-in">
+      <header className="home__head">
+        <h1 className="home__hi">Buenas noches</h1>
+        <p className="home__date">Sesión completada</p>
+      </header>
+
+      <section className="card hero">
+        <Gauge fill={1}>
+          <div className="hero__c">
+            <span className="hero__rhythm">
+              {summary ? RHYTHM_SHORT[summary.rhythmId] : ""}
+            </span>
+            <span className="hero__num">
+              {summary?.minutes}
+              <i className="hero__unit">min</i>
+            </span>
+            <span className="hero__hint">completado</span>
+          </div>
+        </Gauge>
+      </section>
+
+      <section className="card hrv">
+        <span className="card__title">Recuperación</span>
+        {summary?.hrv != null ? (
+          <div className="hrv__val">
+            <span className="hrv__num">{Math.round(summary.hrv)}</span>
+            <span className="hrv__unit">ms · VFC anoche</span>
+          </div>
+        ) : (
+          <p className="hrv__connect">
+            Conecta Salud para ver cómo esta sesión mejora tu descanso.
           </p>
         )}
-        <div className="summary__hrv">
-          {summary?.hrv != null ? (
-            <>
-              <span className="summary__hrv-val">{Math.round(summary.hrv)} ms</span>
-              <span className="summary__hrv-cap">tu VFC de anoche</span>
-            </>
-          ) : (
-            <span className="summary__hrv-cap">
-              conecta Salud para ver cómo esta sesión mejora tu descanso
-            </span>
-          )}
-        </div>
-        <button className="summary__dismiss" onClick={backToMenu}>
-          descansa
-        </button>
-      </div>
+      </section>
+
+      <button className="cta" onClick={backToMenu}>
+        Descansa
+      </button>
     </main>
   );
 }
