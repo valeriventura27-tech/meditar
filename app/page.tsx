@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { BreathingPetals } from "@/components/BreathingPetals";
+import { NebulaOrb } from "@/components/NebulaOrb";
 import { PhaseLabel } from "@/components/PhaseLabel";
 import { RhythmMenu } from "@/components/RhythmMenu";
 import { useBreathingEngine } from "@/lib/useBreathingEngine";
@@ -91,7 +91,7 @@ export default function Home() {
     >
       {stage === "running" ? (
         <>
-          <BreathingPetals
+          <NebulaOrb
             scale={breathing.scale}
             phaseMs={breathing.phaseMs}
             dimmed={dimmed}
