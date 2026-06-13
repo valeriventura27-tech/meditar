@@ -1,0 +1,18 @@
+/node_modules
+/.next
+/out
+/build
+next-env.d.ts
+*.tsbuildinfo
+
+# Capacitor native projects (generated on a Mac with `npx cap add ios`)
+/ios
+/android
+
+# Generated voice asset (large; generate locally with your ElevenLabs key)
+/public/audio/voz-es.mp3
+
+.env
+.env.local
+.DS_Store
+npm-debug.log*

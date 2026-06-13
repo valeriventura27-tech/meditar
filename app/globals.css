@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+  /* Pure black for OLED; never any blue. */
+  background-color: #000000;
+  /* Warm gray text — white carries blue, so we avoid it. */
+  color: #cdbfb3;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  /* No blue tap highlight on touch. */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  user-select: none;
+}
+
+/* Warm text selection instead of the default blue. */
+::selection {
+  background: #b3261a;
+  color: #cdbfb3;
+}
