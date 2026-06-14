@@ -24,7 +24,6 @@ export function BreathingDot({ scale, phaseMs, dimmed }: Props) {
     if (!ctx) return;
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let half = 0;
     let cx = 0;
@@ -68,34 +67,19 @@ export function BreathingDot({ scale, phaseMs, dimmed }: Props) {
       ctx.clearRect(0, 0, half * 2, half * 2);
       if (vis < 0.01) return;
 
-      const base = half * 0.42; // dot radius at full inhale
+      const base = half * 0.34; // dot radius at full inhale
       const r = base * tween.cur;
       ctx.globalCompositeOperation = "lighter";
 
-      // rings of energy emanating outward
-      if (!reduce) {
-        for (let n = 0; n < 4; n++) {
-          const ph = (now / 2800 + n / 4) % 1;
-          const rr = r + ph * half * 0.95;
-          const a = (1 - ph) * (1 - ph) * 0.38 * vis;
-          if (a <= 0.01) continue;
-          ctx.lineWidth = Math.max(1, base * 0.035);
-          ctx.strokeStyle = `rgba(248,96,56,${a})`;
-          ctx.beginPath();
-          ctx.arc(cx, cy, rr, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      }
-
-      // breathing glow halo
+      // soft breathing halo around a pure dot
       const aura = 0.85 + 0.15 * Math.sin(now * 0.0016);
-      const gl = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 2.4);
-      gl.addColorStop(0, `rgba(244,80,42,${0.5 * aura * vis})`);
-      gl.addColorStop(0.5, `rgba(179,38,26,${0.18 * vis})`);
+      const gl = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 2.8);
+      gl.addColorStop(0, `rgba(244,80,42,${0.42 * aura * vis})`);
+      gl.addColorStop(0.45, `rgba(179,38,26,${0.14 * vis})`);
       gl.addColorStop(1, "rgba(120,20,12,0)");
       ctx.fillStyle = gl;
       ctx.beginPath();
-      ctx.arc(cx, cy, r * 2.4, 0, Math.PI * 2);
+      ctx.arc(cx, cy, r * 2.8, 0, Math.PI * 2);
       ctx.fill();
 
       // warm core dot

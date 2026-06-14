@@ -51,21 +51,21 @@ void main(){
       float depthB=0.32+0.68*zf;
       vec2 c=vec2(x*cR-y*sR, x*sR+y*cR);
       float d=length(uv-c)/reff;
-      s += smoothstep(0.45,0.95,d)*(1.0-smoothstep(0.95,1.45,d))*depthB;
+      s += smoothstep(0.62,0.93,d)*(1.0-smoothstep(0.93,1.22,d))*depthB;
     }
   }
-  float geom=s*0.6;
+  float geom=s*1.05;
 
   float dist=length(uv);
   float t=u_time;
   float wx=fbm(vec3(uv.x*1.6+t*0.2, uv.y*1.6, t*0.15));
   float wy=fbm(vec3(uv.x*1.6, uv.y*1.6+t*0.2, t*0.15+3.0));
   float smk=fbm(vec3(uv.x*2.2+1.4*wx, uv.y*2.2+1.4*wy-t*0.3, t*0.2));
-  smk=pow(max(smk,0.0),1.2);
-  smk*=exp(-pow(dist/(Rmax*1.25),2.0));
+  smk=pow(max(smk,0.0),1.3);
+  smk*=exp(-pow(dist/(Rmax*1.3),2.0));
 
-  float bloom=exp(-dist*2.3)*0.45;
-  float val=smk*2.2 + geom*(0.18+0.55*smk) + bloom;
+  float bloom=exp(-dist*2.3)*0.4;
+  float val=geom*1.0 + smk*1.0 + bloom;
   float lum=1.0-exp(-val*1.5);
   float hi=smoothstep(0.74,1.0,lum);
   vec3 col=vec3(lum, lum*lum*0.18+hi*0.2, lum*lum*0.05+hi*0.09);

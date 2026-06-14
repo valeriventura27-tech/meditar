@@ -35,6 +35,7 @@ export default function Home() {
   const [minutes, setMinutes] = useState(10);
   const [rhythm, setRhythm] = useState<Rhythm>(COHERENCE);
   const [visual, setVisual] = useState<Visual>("flor");
+  const [binaural, setBinaural] = useState(true);
   const [dimmed, setDimmed] = useState(false);
   const [summary, setSummary] = useState<{
     minutes: number;
@@ -45,14 +46,21 @@ export default function Home() {
   const audioRef = useRef<SessionAudio | null>(null);
   const totalSeconds = minutes * 60;
 
-  // Persisted visual choice (flower vs dot).
+  // Persisted preferences.
   useEffect(() => {
     const v = localStorage.getItem("meditar.visual");
     if (v === "flor" || v === "punto") setVisual(v);
+    setBinaural(localStorage.getItem("meditar.binaural") !== "off");
   }, []);
   const chooseVisual = (v: Visual) => {
     setVisual(v);
     localStorage.setItem("meditar.visual", v);
+  };
+  const toggleBinaural = () => {
+    setBinaural((b) => {
+      localStorage.setItem("meditar.binaural", b ? "off" : "on");
+      return !b;
+    });
   };
 
   const handleComplete = async () => {
@@ -89,7 +97,7 @@ export default function Home() {
     audioRef.current = audio;
     const chosen = await resolveRhythm();
     setRhythm(chosen);
-    await audio.start(totalSeconds);
+    await audio.start(totalSeconds, binaural);
     setDimmed(false);
     setStage("running");
   };
@@ -125,6 +133,14 @@ export default function Home() {
     const stress = Math.max(5, Math.min(95, Math.round(100 - (cur - 38) * 2.4)));
     const stressLabel = stress < 35 ? "Bajo" : stress < 65 ? "Medio" : "Alto";
 
+    const name = "Valeri";
+    const insight =
+      stress >= 65
+        ? `Tu estrés está alto, ${name}. Te recomiendo 15 min de 4·7·8 para ajustar tu HRV antes de dormir y amanecer más descansado.`
+        : stress >= 35
+          ? `Estrés moderado, ${name}. 10 min de Coherencia 5,5 te ayudarán a soltar el día y dormir mejor.`
+          : `Vas en calma, ${name}. Con 5 min de Coherencia entrarás en un descanso profundo.`;
+
     const VISUALS: { id: Visual; name: string; desc: string }[] = [
       { id: "flor", name: "Flor de la vida", desc: "geometría viva que florece" },
       { id: "punto", name: "Punto", desc: "una luz que respira" },
@@ -138,6 +154,8 @@ export default function Home() {
               <h1 className="home__hi">{greeting}</h1>
               <p className="home__date">{dateLabel}</p>
             </header>
+
+            <p className="insight">{insight}</p>
 
             <section className="card hero">
               <Gauge fill={minutes / 30}>
@@ -254,6 +272,25 @@ export default function Home() {
                   </button>
                 ))}
               </div>
+            </section>
+
+            <section className="card">
+              <span className="card__title">Sonido</span>
+              <button
+                className="setting-row"
+                onClick={toggleBinaural}
+                aria-pressed={binaural}
+              >
+                <span className="setting-row__txt">
+                  <span className="setting-row__name">Ruido binaural</span>
+                  <span className="setting-row__desc">
+                    Latido theta→delta · requiere auriculares
+                  </span>
+                </span>
+                <span className={`switch ${binaural ? "switch--on" : ""}`}>
+                  <span className="switch__knob" />
+                </span>
+              </button>
             </section>
           </>
         )}

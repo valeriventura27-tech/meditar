@@ -71,29 +71,28 @@ function centers() {
 const C = centers();
 
 function shade(x, y) {
-  // very soft sacred geometry (faint glowing lines, no dots)
+  // sacred geometry — clearly visible, softly drawn
   let s = 0;
   for (let i = 0; i < C.length; i++) {
     const reff = R * C[i][2];
     const dx = x - C[i][0], dy = y - C[i][1];
     const d = Math.sqrt(dx * dx + dy * dy) / reff;
-    s += smoothstep(0.45, 0.95, d) * (1 - smoothstep(0.95, 1.45, d)) * C[i][3];
+    s += smoothstep(0.62, 0.93, d) * (1 - smoothstep(0.93, 1.22, d)) * C[i][3];
   }
-  const geom = s * 0.6;
+  const geom = s * 1.05;
 
   const dist = Math.hypot(x, y);
-  // soft, billowing, domain-warped smoke — the dominant body
+  // smoke as atmosphere around/through the geometry (not a veil over it)
   const t = TIME;
   const wx = fbm(x * 1.6 + t * 0.2, y * 1.6, t * 0.15);
   const wy = fbm(x * 1.6, y * 1.6 + t * 0.2, t * 0.15 + 3);
   let smk = fbm(x * 2.2 + 1.4 * wx, y * 2.2 + 1.4 * wy - t * 0.3, t * 0.2);
-  smk = Math.pow(Math.max(smk, 0), 1.2);
-  const orbMask = Math.exp(-Math.pow(dist / (Rmax * 1.25), 2));
+  smk = Math.pow(Math.max(smk, 0), 1.3);
+  const orbMask = Math.exp(-Math.pow(dist / (Rmax * 1.3), 2));
   smk *= orbMask;
 
-  const bloom = Math.exp(-dist * 2.3) * 0.45;
-  // smoke body, geometry only whispering through where smoke is present
-  const val = smk * 2.2 + geom * (0.18 + 0.55 * smk) + bloom;
+  const bloom = Math.exp(-dist * 2.3) * 0.4;
+  const val = geom * 1.0 + smk * 1.0 + bloom;
   const lum = 1 - Math.exp(-val * 1.5);
   const hi = smoothstep(0.74, 1.0, lum);
   const r = lum;
