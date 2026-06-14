@@ -6,6 +6,8 @@ import { BreathingDot } from "@/components/BreathingDot";
 import { PhaseLabel } from "@/components/PhaseLabel";
 import { RhythmMenu, RHYTHM_SHORT } from "@/components/RhythmMenu";
 import { Gauge } from "@/components/Gauge";
+import { TabBar, type Tab } from "@/components/TabBar";
+import { HrvChart } from "@/components/HrvChart";
 import { useBreathingEngine } from "@/lib/useBreathingEngine";
 import { RHYTHMS, makeAdaptiveRhythm, type Rhythm } from "@/lib/rhythms";
 import { chooseAdaptiveStart, readOvernightHRV } from "@/lib/health/healthkit";
@@ -18,13 +20,17 @@ const DESC: Record<string, string> = {
   adaptativo: "se ajusta a tu HRV",
 };
 
-type Stage = "menu" | "settings" | "running" | "done";
+type Stage = "home" | "running" | "done";
 type Visual = "flor" | "punto";
 
 const COHERENCE = RHYTHMS[0];
 
+// Sample HRV history for the Trends tab (until HealthKit is connected).
+const HRV_SERIES = [46, 43, 49, 51, 47, 54, 50, 57, 53, 59, 56, 61, 58, 63];
+
 export default function Home() {
-  const [stage, setStage] = useState<Stage>("menu");
+  const [stage, setStage] = useState<Stage>("home");
+  const [tab, setTab] = useState<Tab>("inicio");
   const [selectedId, setSelectedId] = useState(COHERENCE.id);
   const [minutes, setMinutes] = useState(10);
   const [rhythm, setRhythm] = useState<Rhythm>(COHERENCE);
@@ -36,15 +42,8 @@ export default function Home() {
     hrv: number | null;
   } | null>(null);
 
-  const [homeHrv, setHomeHrv] = useState<number | null>(null);
-
   const audioRef = useRef<SessionAudio | null>(null);
   const totalSeconds = minutes * 60;
-
-  // Last night's HRV for the recovery card (null on web / if denied).
-  useEffect(() => {
-    readOvernightHRV().then(setHomeHrv);
-  }, []);
 
   // Persisted visual choice (flower vs dot).
   useEffect(() => {
@@ -102,10 +101,11 @@ export default function Home() {
   const backToMenu = () => {
     setSummary(null);
     setDimmed(false);
-    setStage("menu");
+    setTab("inicio");
+    setStage("home");
   };
 
-  if (stage === "menu") {
+  if (stage === "home") {
     const hour = new Date().getHours();
     const greeting =
       hour >= 21 || hour < 5
@@ -119,98 +119,146 @@ export default function Home() {
       month: "long",
     });
 
-    return (
-      <main className="home fade-in">
-        <header className="home__head home__head--row">
-          <div>
-            <h1 className="home__hi">{greeting}</h1>
-            <p className="home__date">{dateLabel}</p>
-          </div>
-          <button
-            className="home__settings"
-            onClick={() => setStage("settings")}
-            aria-label="Ajustes"
-          >
-            Ajustes
-          </button>
-        </header>
+    const cur = HRV_SERIES[HRV_SERIES.length - 1];
+    const base = HRV_SERIES.reduce((a, b) => a + b, 0) / HRV_SERIES.length;
+    const recovery = Math.min(100, Math.round((cur / base) * 72));
+    const stress = Math.max(5, Math.min(95, Math.round(100 - (cur - 38) * 2.4)));
+    const stressLabel = stress < 35 ? "Bajo" : stress < 65 ? "Medio" : "Alto";
 
-        <section className="card hero">
-          <Gauge fill={minutes / 30}>
-            <div className="hero__c">
-              <span className="hero__rhythm">{RHYTHM_SHORT[selectedId]}</span>
-              <span className="hero__num">
-                {minutes}
-                <i className="hero__unit">min</i>
-              </span>
-              <span className="hero__hint">{DESC[selectedId]}</span>
-            </div>
-          </Gauge>
-          <div className="dur">
-            {[5, 10, 30].map((m) => (
-              <button
-                key={m}
-                onClick={() => setMinutes(m)}
-                className={`dur__pill ${minutes === m ? "dur__pill--on" : ""}`}
-              >
-                {m} min
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <RhythmMenu selectedId={selectedId} onSelect={setSelectedId} />
-
-        <section className="card hrv">
-          <span className="card__title">Recuperación</span>
-          {homeHrv != null ? (
-            <div className="hrv__val">
-              <span className="hrv__num">{Math.round(homeHrv)}</span>
-              <span className="hrv__unit">ms · VFC anoche</span>
-            </div>
-          ) : (
-            <p className="hrv__connect">
-              Conecta Salud para ver cómo cada sesión mejora tu descanso.
-            </p>
-          )}
-        </section>
-
-        <button className="cta" onClick={handleStart}>
-          Empezar
-        </button>
-      </main>
-    );
-  }
-
-  if (stage === "settings") {
     const VISUALS: { id: Visual; name: string; desc: string }[] = [
       { id: "flor", name: "Flor de la vida", desc: "geometría viva que florece" },
       { id: "punto", name: "Punto", desc: "una luz que respira" },
     ];
+
     return (
-      <main className="home fade-in">
-        <header className="home__head">
-          <h1 className="home__hi">Ajustes</h1>
-          <p className="home__date">Personaliza tu sesión</p>
-        </header>
-        <section className="card">
-          <span className="card__title">Visual de la sesión</span>
-          <div className="opts">
-            {VISUALS.map((v) => (
-              <button
-                key={v.id}
-                onClick={() => chooseVisual(v.id)}
-                className={`opt ${visual === v.id ? "opt--on" : ""}`}
-              >
-                <span className="opt__name">{v.name}</span>
-                <span className="opt__desc">{v.desc}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-        <button className="cta" onClick={() => setStage("menu")}>
-          Hecho
-        </button>
+      <main className="home dash fade-in">
+        {tab === "inicio" && (
+          <>
+            <header className="home__head">
+              <h1 className="home__hi">{greeting}</h1>
+              <p className="home__date">{dateLabel}</p>
+            </header>
+
+            <section className="card hero">
+              <Gauge fill={minutes / 30}>
+                <div className="hero__c">
+                  <span className="hero__rhythm">{RHYTHM_SHORT[selectedId]}</span>
+                  <span className="hero__num">
+                    {minutes}
+                    <i className="hero__unit">min</i>
+                  </span>
+                  <span className="hero__hint">{DESC[selectedId]}</span>
+                </div>
+              </Gauge>
+              <div className="dur">
+                {[5, 10, 30].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMinutes(m)}
+                    className={`dur__pill ${minutes === m ? "dur__pill--on" : ""}`}
+                  >
+                    {m} min
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <RhythmMenu selectedId={selectedId} onSelect={setSelectedId} />
+
+            <button className="cta" onClick={handleStart}>
+              Empezar
+            </button>
+          </>
+        )}
+
+        {tab === "tendencias" && (
+          <>
+            <header className="home__head">
+              <h1 className="home__hi">Tendencias</h1>
+              <p className="home__date">Tu recuperación</p>
+            </header>
+
+            <section className="card">
+              <span className="card__title">Recuperación</span>
+              <div className="stat">
+                <span className="stat__num">
+                  {recovery}
+                  <i className="stat__unit">%</i>
+                </span>
+                <span className="stat__label">Listo para descansar</span>
+              </div>
+              <div className="bar">
+                <div className="bar__fill" style={{ width: `${recovery}%` }} />
+              </div>
+            </section>
+
+            <section className="card">
+              <div className="card__row">
+                <span className="card__title">Variabilidad · VFC</span>
+                <span className="card__big">{cur} ms</span>
+              </div>
+              <HrvChart data={HRV_SERIES} />
+              <p className="caption">Últimas 14 noches · datos de ejemplo</p>
+            </section>
+
+            <section className="card">
+              <span className="card__title">Estrés</span>
+              <div className="stat">
+                <span className="stat__num stat__num--stress">{stress}</span>
+                <span className="stat__label">{stressLabel}</span>
+              </div>
+              <div className="bar">
+                <div
+                  className="bar__fill bar__fill--stress"
+                  style={{ width: `${stress}%` }}
+                />
+              </div>
+            </section>
+
+            <section className="card">
+              <div className="metrics">
+                <div className="metric">
+                  <span className="metric__v">{Math.round(base)}</span>
+                  <span className="metric__k">VFC base</span>
+                </div>
+                <div className="metric">
+                  <span className="metric__v">58</span>
+                  <span className="metric__k">FC reposo</span>
+                </div>
+                <div className="metric">
+                  <span className="metric__v">7,4 h</span>
+                  <span className="metric__k">Sueño</span>
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {tab === "ajustes" && (
+          <>
+            <header className="home__head">
+              <h1 className="home__hi">Ajustes</h1>
+              <p className="home__date">Personaliza tu sesión</p>
+            </header>
+            <section className="card">
+              <span className="card__title">Visual de la sesión</span>
+              <div className="opts">
+                {VISUALS.map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => chooseVisual(v.id)}
+                    className={`opt ${visual === v.id ? "opt--on" : ""}`}
+                  >
+                    <span className="opt__name">{v.name}</span>
+                    <span className="opt__desc">{v.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
+
+        <TabBar tab={tab} onTab={setTab} />
       </main>
     );
   }
