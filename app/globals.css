@@ -51,6 +51,63 @@ body {
 .home__head {
   padding: 0 0.4rem 0.3rem;
 }
+.home__head--row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.home__settings {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9a8676;
+  background: transparent;
+  border: 1px solid rgba(255, 120, 80, 0.16);
+  border-radius: 9999px;
+  padding: 0.4rem 0.85rem;
+}
+
+/* ---- Settings options ---- */
+.opts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.opt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 0.95rem 1.1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 120, 80, 0.1);
+  background: rgba(244, 80, 42, 0.05);
+  transition: all 0.3s ease;
+}
+.opt--on {
+  border-color: transparent;
+  background: linear-gradient(135deg, rgba(244, 80, 42, 0.9), rgba(179, 38, 26, 0.9));
+  box-shadow: 0 8px 22px rgba(244, 80, 42, 0.25);
+}
+.opt__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f3e2d6;
+}
+.opt--on .opt__name {
+  color: #2a0d07;
+}
+.opt__desc {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #9a8676;
+}
+.opt--on .opt__desc {
+  color: #3a1109;
+}
 .home__hi {
   font-size: 1.85rem;
   font-weight: 800;

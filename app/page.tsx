@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BreathingFlower } from "@/components/BreathingFlower";
+import { BreathingDot } from "@/components/BreathingDot";
 import { PhaseLabel } from "@/components/PhaseLabel";
 import { RhythmMenu, RHYTHM_SHORT } from "@/components/RhythmMenu";
 import { Gauge } from "@/components/Gauge";
@@ -17,7 +18,8 @@ const DESC: Record<string, string> = {
   adaptativo: "se ajusta a tu HRV",
 };
 
-type Stage = "menu" | "running" | "done";
+type Stage = "menu" | "settings" | "running" | "done";
+type Visual = "flor" | "punto";
 
 const COHERENCE = RHYTHMS[0];
 
@@ -26,6 +28,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState(COHERENCE.id);
   const [minutes, setMinutes] = useState(10);
   const [rhythm, setRhythm] = useState<Rhythm>(COHERENCE);
+  const [visual, setVisual] = useState<Visual>("flor");
   const [dimmed, setDimmed] = useState(false);
   const [summary, setSummary] = useState<{
     minutes: number;
@@ -42,6 +45,16 @@ export default function Home() {
   useEffect(() => {
     readOvernightHRV().then(setHomeHrv);
   }, []);
+
+  // Persisted visual choice (flower vs dot).
+  useEffect(() => {
+    const v = localStorage.getItem("meditar.visual");
+    if (v === "flor" || v === "punto") setVisual(v);
+  }, []);
+  const chooseVisual = (v: Visual) => {
+    setVisual(v);
+    localStorage.setItem("meditar.visual", v);
+  };
 
   const handleComplete = async () => {
     setDimmed(true);
@@ -108,9 +121,18 @@ export default function Home() {
 
     return (
       <main className="home fade-in">
-        <header className="home__head">
-          <h1 className="home__hi">{greeting}</h1>
-          <p className="home__date">{dateLabel}</p>
+        <header className="home__head home__head--row">
+          <div>
+            <h1 className="home__hi">{greeting}</h1>
+            <p className="home__date">{dateLabel}</p>
+          </div>
+          <button
+            className="home__settings"
+            onClick={() => setStage("settings")}
+            aria-label="Ajustes"
+          >
+            Ajustes
+          </button>
         </header>
 
         <section className="card hero">
@@ -160,13 +182,47 @@ export default function Home() {
     );
   }
 
+  if (stage === "settings") {
+    const VISUALS: { id: Visual; name: string; desc: string }[] = [
+      { id: "flor", name: "Flor de la vida", desc: "geometría viva que florece" },
+      { id: "punto", name: "Punto", desc: "una luz que respira" },
+    ];
+    return (
+      <main className="home fade-in">
+        <header className="home__head">
+          <h1 className="home__hi">Ajustes</h1>
+          <p className="home__date">Personaliza tu sesión</p>
+        </header>
+        <section className="card">
+          <span className="card__title">Visual de la sesión</span>
+          <div className="opts">
+            {VISUALS.map((v) => (
+              <button
+                key={v.id}
+                onClick={() => chooseVisual(v.id)}
+                className={`opt ${visual === v.id ? "opt--on" : ""}`}
+              >
+                <span className="opt__name">{v.name}</span>
+                <span className="opt__desc">{v.desc}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+        <button className="cta" onClick={() => setStage("menu")}>
+          Hecho
+        </button>
+      </main>
+    );
+  }
+
   if (stage === "running") {
+    const Visualizer = visual === "flor" ? BreathingFlower : BreathingDot;
     return (
       <main
         onClick={endEarly}
         className="fade-in relative flex min-h-screen flex-col items-center justify-center"
       >
-        <BreathingFlower
+        <Visualizer
           scale={breathing.scale}
           phaseMs={breathing.phaseMs}
           dimmed={dimmed}

@@ -2,18 +2,16 @@
 
 import { useEffect, useRef } from "react";
 
-// Apple Watch "Breathe"-style Flower of Life, drawn as crisp red circle
-// outlines on a hex lattice. The overlapping rings form an intricate
-// sacred-geometry mandala that blooms open on inhale and tightens on exhale,
-// with a slow rotation. Pure red only (no blue, for melatonin).
+// A living Flower of Life: crisp red circle outlines on a hex lattice that
+// shimmer, pulse with a wave of energy travelling outward, and glow like neon.
+// It blooms open on inhale and collapses to a point on exhale. Pure warm red.
 
-const RF = 0.105; // circle radius as a fraction of the half-size (small)
+const RF = 0.105; // circle radius as a fraction of the half-size
 const RINGS = 4; // hex-lattice rings -> intricate detail
 
 function easeInOut(t: number) {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
-
 function smoothstep(e0: number, e1: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
   return t * t * (3 - 2 * t);
@@ -57,11 +55,15 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
     const tween = { cur: 0, from: 0, to: 0, start: 0, dur: 1 };
     let dim = 0;
     let raf = 0;
+    let lastDraw = 0;
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
+      if (now - lastDraw < 33) return; // ~30fps
+      lastDraw = now;
+
       const p = propsRef.current;
-      const target = (p.scale - 0.4) / 0.6; // 0 (exhale) .. 1 (inhale)
+      const target = (p.scale - 0.4) / 0.6;
       if (tween.to !== target) {
         tween.from = tween.cur;
         tween.to = target;
@@ -77,8 +79,7 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
       if (vis < 0.01) return;
 
       const spread = Math.max(0, Math.min(1, tween.cur));
-      // collapses to a point on exhale, blooms to the full flower on inhale
-      const breathScale = 0.12 + 0.88 * spread;
+      const breathScale = 0.12 + 0.88 * spread; // collapses to a point on exhale
       const rad = Rpx * breathScale;
       const spacing = rad * 0.98;
       const rot = reduce ? 0.3 : now * 0.00004 + 0.2;
@@ -89,17 +90,20 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
       const by = spacing * 0.8660254;
       const extent = spacing * RINGS + rad;
 
-      // faint warm bed so it isn't stark on black
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, extent * 1.2);
-      g.addColorStop(0, `rgba(170,28,12,${0.18 * vis})`);
+      // faint warm bed + a soft breathing aura
+      const aura = 0.5 + 0.5 * Math.sin(now * 0.0012);
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, extent * 1.3);
+      g.addColorStop(0, `rgba(180,30,14,${(0.14 + 0.06 * aura) * vis})`);
       g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, half * 2, half * 2);
 
-      // crisp warm-red ring lattice, additive so intersections glow; outer
-      // rings fall into shadow for depth
+      // a wave of energy travelling outward through the lattice
+      const pulseR = ((now % 4200) / 4200) * extent * 1.15;
+      const glowW = Math.max(1, rad * 0.34);
+      const coreW = Math.max(0.5, rad * 0.12);
+
       ctx.globalCompositeOperation = "lighter";
-      ctx.lineWidth = Math.max(0.6, rad * 0.16);
       for (let i = -RINGS; i <= RINGS; i++) {
         for (let j = -RINGS; j <= RINGS; j++) {
           if ((Math.abs(i) + Math.abs(j) + Math.abs(i + j)) / 2 > RINGS) continue;
@@ -108,8 +112,22 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
           const px = cx + x * cosR - y * sinR;
           const py = cy + x * sinR + y * cosR;
           const dc = Math.hypot(x, y);
-          const shade = 1 - 0.5 * smoothstep(extent * 0.25, extent, dc);
-          ctx.strokeStyle = `rgba(236,52,22,${0.72 * vis * shade})`;
+
+          const depth = 1 - 0.5 * smoothstep(extent * 0.25, extent, dc);
+          const shimmer = reduce ? 1 : 0.62 + 0.38 * Math.sin(now * 0.0026 + i * 1.7 + j * 2.3);
+          const pulse = Math.exp(-Math.pow((dc - pulseR) / (extent * 0.14), 2));
+          const a = Math.min(1, 0.55 * shimmer + pulse) * depth * vis;
+          if (a <= 0.012) continue;
+
+          // soft glow pass
+          ctx.lineWidth = glowW;
+          ctx.strokeStyle = `rgba(220,32,15,${0.2 * a})`;
+          ctx.beginPath();
+          ctx.arc(px, py, rad, 0, Math.PI * 2);
+          ctx.stroke();
+          // bright neon core pass
+          ctx.lineWidth = coreW;
+          ctx.strokeStyle = `rgba(255,96,56,${0.92 * a})`;
           ctx.beginPath();
           ctx.arc(px, py, rad, 0, Math.PI * 2);
           ctx.stroke();
