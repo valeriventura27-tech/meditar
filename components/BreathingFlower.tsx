@@ -90,62 +90,66 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
       const by = spacing * 0.8660254;
       const extent = spacing * RINGS + rad;
 
-      // faint warm bed + a soft breathing aura
       const aura = 0.5 + 0.5 * Math.sin(now * 0.0012);
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, extent * 1.3);
-      g.addColorStop(0, `rgba(180,30,14,${(0.14 + 0.06 * aura) * vis})`);
-      g.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, half * 2, half * 2);
-
-      // a bright wave of energy racing outward through a dim resting lattice
+      const Rmax = spacing * RINGS * 1.04;
       const pulseR = ((now % 3400) / 3400) * extent * 1.2;
-      const bloomW = Math.max(1, rad * 0.55);
-      const glowW = Math.max(1, rad * 0.26);
-      const coreW = Math.max(0.5, rad * 0.1);
-      const nodeR = rad * 0.42;
 
       ctx.globalCompositeOperation = "lighter";
+
+      // strong additive bloom -> depth and glow
+      const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, extent * 1.3);
+      bloom.addColorStop(0, `rgba(150,22,10,${(0.3 + 0.12 * aura) * vis})`);
+      bloom.addColorStop(0.5, `rgba(110,16,8,${0.12 * vis})`);
+      bloom.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = bloom;
+      ctx.beginPath();
+      ctx.arc(cx, cy, extent * 1.3, 0, Math.PI * 2);
+      ctx.fill();
+
       for (let i = -RINGS; i <= RINGS; i++) {
         for (let j = -RINGS; j <= RINGS; j++) {
           if ((Math.abs(i) + Math.abs(j) + Math.abs(i + j)) / 2 > RINGS) continue;
           const x = i * ax + j * bx;
           const y = j * by;
+          const dl = Math.hypot(x, y);
+          // dome: foreshorten + brighten toward the centre (3D sphere)
+          const zf = Math.sqrt(Math.max(0, 1 - (dl / Rmax) ** 2));
+          const reff = rad * (0.42 + 0.58 * zf);
+          const depthB = 0.32 + 0.68 * zf;
           const px = cx + x * cosR - y * sinR;
           const py = cy + x * sinR + y * cosR;
-          const dc = Math.hypot(x, y);
 
-          const depth = 1 - 0.5 * smoothstep(extent * 0.25, extent, dc);
           const shimmer = reduce ? 0.6 : 0.5 + 0.5 * Math.sin(now * 0.0028 + i * 1.7 + j * 2.3);
-          const pulse = Math.exp(-Math.pow((dc - pulseR) / (extent * 0.12), 2));
-          const a = Math.min(1, 0.3 * shimmer + 0.95 * pulse) * depth * vis;
+          const pulse = Math.exp(-Math.pow((dl - pulseR) / (extent * 0.12), 2));
+          const a = Math.min(1, 0.3 * shimmer + 0.95 * pulse) * depthB * vis;
           if (a <= 0.012) continue;
 
-          ctx.lineWidth = bloomW;
+          ctx.lineWidth = Math.max(1, reff * 0.55);
           ctx.strokeStyle = `rgba(190,26,12,${0.09 * a})`;
           ctx.beginPath();
-          ctx.arc(px, py, rad, 0, Math.PI * 2);
+          ctx.arc(px, py, reff, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.lineWidth = glowW;
+          ctx.lineWidth = Math.max(1, reff * 0.26);
           ctx.strokeStyle = `rgba(228,40,18,${0.2 * a})`;
           ctx.beginPath();
-          ctx.arc(px, py, rad, 0, Math.PI * 2);
+          ctx.arc(px, py, reff, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.lineWidth = coreW;
+          ctx.lineWidth = Math.max(0.5, reff * 0.1);
           ctx.strokeStyle = `rgba(255,110,66,${0.95 * a})`;
           ctx.beginPath();
-          ctx.arc(px, py, rad, 0, Math.PI * 2);
+          ctx.arc(px, py, reff, 0, Math.PI * 2);
           ctx.stroke();
 
           // node of light at the vertex, flaring as the wave passes
-          const na = Math.min(1, 0.16 * shimmer + 1.1 * pulse) * depth * vis;
+          const na = Math.min(1, 0.16 * shimmer + 1.1 * pulse) * depthB * vis;
           if (na > 0.04) {
-            const nd = ctx.createRadialGradient(px, py, 0, px, py, nodeR);
+            const nr = reff * 0.42;
+            const nd = ctx.createRadialGradient(px, py, 0, px, py, nr);
             nd.addColorStop(0, `rgba(255,150,92,${0.6 * na})`);
             nd.addColorStop(1, "rgba(255,80,40,0)");
             ctx.fillStyle = nd;
             ctx.beginPath();
-            ctx.arc(px, py, nodeR, 0, Math.PI * 2);
+            ctx.arc(px, py, nr, 0, Math.PI * 2);
             ctx.fill();
           }
         }

@@ -26,15 +26,21 @@ const spacing = R * 0.98; // flower-of-life overlap; whole thing breathes
 function centers() {
   const pts = [];
   const ax = spacing, bx = spacing * 0.5, by = spacing * 0.8660254;
+  const Rmax = RINGS * spacing * 1.04;
   for (let i = -RINGS; i <= RINGS; i++) {
     for (let j = -RINGS; j <= RINGS; j++) {
       const hexDist = (Math.abs(i) + Math.abs(j) + Math.abs(i + j)) / 2;
       if (hexDist > RINGS) continue;
       const x = i * ax + j * bx;
       const y = j * by;
+      const dl = Math.hypot(x, y);
+      // dome: foreshorten + dim toward the rim for a 3D sphere
+      const zf = Math.sqrt(Math.max(0, 1 - (dl / Rmax) ** 2));
       pts.push([
         x * Math.cos(ROT) - y * Math.sin(ROT),
         x * Math.sin(ROT) + y * Math.cos(ROT),
+        0.42 + 0.58 * zf, // per-circle radius scale
+        0.32 + 0.68 * zf, // depth brightness
       ]);
     }
   }
@@ -46,24 +52,24 @@ function shade(x, y) {
   let s = 0;
   let node = 0;
   for (let i = 0; i < C.length; i++) {
+    const reff = R * C[i][2];
     const dx = x - C[i][0], dy = y - C[i][1];
-    const d = Math.sqrt(dx * dx + dy * dy) / R;
-    // thin ring (circle outline) -> crisp sacred-geometry lattice
-    s += smoothstep(0.82, 0.95, d) * (1 - smoothstep(0.95, 1.06, d));
-    // glowing node of light at each lattice vertex
-    node += Math.exp(-(d * d) / 0.09);
+    const d = Math.sqrt(dx * dx + dy * dy) / reff;
+    const ring = smoothstep(0.82, 0.95, d) * (1 - smoothstep(0.95, 1.06, d));
+    s += ring * C[i][3];
+    node += Math.exp(-(d * d) / 0.09) * C[i][3];
   }
   const dist = Math.hypot(x, y);
-  const glow = Math.exp(-dist * 5.0) * 0.12;
-  const val = s * 1.5 + node * 1.1 + glow;
-  const lum = 1 - Math.exp(-val * 1.5);
-  let r = lum;
-  let g = lum * lum * 0.22;
-  let b = lum * lum * 0.07;
-  const extent = spacing * RINGS + R;
-  const shade = 1 - 0.5 * smoothstep(extent * 0.25, extent, dist);
-  r *= shade; g *= shade; b *= shade;
-  return [r, g, b];
+  const bloom = Math.exp(-dist * 2.3) * 0.55; // big soft bloom
+  const val = s * 1.5 + node * 0.9 + bloom;
+  const lum = 1 - Math.exp(-val * 1.45);
+  // rich red with incandescent highlights at the brightest peaks
+  const hi = smoothstep(0.72, 1.0, lum);
+  const r = lum;
+  const g = lum * lum * 0.2 + hi * 0.28;
+  const b = lum * lum * 0.05 + hi * 0.14;
+  const vig = smoothstep(1.18, 0.75, dist);
+  return [r * vig, g * vig, b * vig];
 }
 
 const rgba = Buffer.alloc(SIZE * SIZE * 4);
