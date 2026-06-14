@@ -18,9 +18,10 @@ const smoothstep = (e0, e1, x) => {
   return t * t * (3 - 2 * t);
 };
 
-const RINGS = 3; // hex-lattice rings -> more detail
-const R = 0.135; // smaller circles
-const spacing = R * (0.82 + 0.32 * SPREAD); // flower-of-life overlap, breathes
+const RINGS = 4; // more rings -> more detail
+const breathScale = 0.12 + 0.88 * SPREAD; // collapses to a point on exhale
+const R = 0.105 * breathScale; // smaller circles
+const spacing = R * 0.98; // flower-of-life overlap; whole thing breathes
 
 function centers() {
   const pts = [];
@@ -51,15 +52,18 @@ function shade(x, y) {
     s += ring;
   }
   const dist = Math.hypot(x, y);
-  const glow = Math.exp(-dist * 4.0) * 0.1;
+  const glow = Math.exp(-dist * 5.0) * 0.1;
   const val = s * 1.5 + glow;
-  // pure red — brightness only
   const lum = 1 - Math.exp(-val * 1.4);
-  const r = lum;
-  const g = lum * lum * 0.13;
-  const b = lum * lum * 0.05;
-  const vig = smoothstep(1.1, 0.7, dist);
-  return [r * vig, g * vig, b * vig];
+  // warmer red (toward vermilion, still red — not amber)
+  let r = lum;
+  let g = lum * lum * 0.2;
+  let b = lum * lum * 0.06;
+  // radial shading for depth: outer rings fall into shadow
+  const extent = spacing * RINGS + R;
+  const shade = 1 - 0.5 * smoothstep(extent * 0.25, extent, dist);
+  r *= shade; g *= shade; b *= shade;
+  return [r, g, b];
 }
 
 const rgba = Buffer.alloc(SIZE * SIZE * 4);

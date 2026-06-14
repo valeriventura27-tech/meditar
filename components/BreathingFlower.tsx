@@ -7,11 +7,16 @@ import { useEffect, useRef } from "react";
 // sacred-geometry mandala that blooms open on inhale and tightens on exhale,
 // with a slow rotation. Pure red only (no blue, for melatonin).
 
-const RF = 0.135; // circle radius as a fraction of the half-size (small)
-const RINGS = 3; // hex-lattice rings -> intricate detail
+const RF = 0.105; // circle radius as a fraction of the half-size (small)
+const RINGS = 4; // hex-lattice rings -> intricate detail
 
 function easeInOut(t: number) {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+function smoothstep(e0: number, e1: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
 }
 
 type Props = { scale: number; phaseMs: number; dimmed: boolean };
@@ -72,25 +77,29 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
       if (vis < 0.01) return;
 
       const spread = Math.max(0, Math.min(1, tween.cur));
-      const spacing = Rpx * (0.82 + 0.32 * spread);
+      // collapses to a point on exhale, blooms to the full flower on inhale
+      const breathScale = 0.12 + 0.88 * spread;
+      const rad = Rpx * breathScale;
+      const spacing = rad * 0.98;
       const rot = reduce ? 0.3 : now * 0.00004 + 0.2;
       const cosR = Math.cos(rot);
       const sinR = Math.sin(rot);
       const ax = spacing;
       const bx = spacing * 0.5;
       const by = spacing * 0.8660254;
+      const extent = spacing * RINGS + rad;
 
       // faint warm bed so it isn't stark on black
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, spacing * 3.6);
-      g.addColorStop(0, `rgba(150,16,8,${0.16 * vis})`);
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, extent * 1.2);
+      g.addColorStop(0, `rgba(170,28,12,${0.18 * vis})`);
       g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, half * 2, half * 2);
 
-      // crisp red ring lattice, additive so intersections glow
+      // crisp warm-red ring lattice, additive so intersections glow; outer
+      // rings fall into shadow for depth
       ctx.globalCompositeOperation = "lighter";
-      ctx.lineWidth = Rpx * 0.15;
-      ctx.strokeStyle = `rgba(220,22,11,${0.72 * vis})`;
+      ctx.lineWidth = Math.max(0.6, rad * 0.16);
       for (let i = -RINGS; i <= RINGS; i++) {
         for (let j = -RINGS; j <= RINGS; j++) {
           if ((Math.abs(i) + Math.abs(j) + Math.abs(i + j)) / 2 > RINGS) continue;
@@ -98,8 +107,11 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
           const y = j * by;
           const px = cx + x * cosR - y * sinR;
           const py = cy + x * sinR + y * cosR;
+          const dc = Math.hypot(x, y);
+          const shade = 1 - 0.5 * smoothstep(extent * 0.25, extent, dc);
+          ctx.strokeStyle = `rgba(236,52,22,${0.72 * vis * shade})`;
           ctx.beginPath();
-          ctx.arc(px, py, Rpx, 0, Math.PI * 2);
+          ctx.arc(px, py, rad, 0, Math.PI * 2);
           ctx.stroke();
         }
       }
