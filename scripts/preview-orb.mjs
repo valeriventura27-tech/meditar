@@ -75,10 +75,15 @@ function shade(uvx, uvy, t, scale) {
   const b = rox * rdx + roy * rdy + roz * rdz;
   const c = rox * rox + roy * roy + roz * roz - br * br;
   let h = b * b - c;
-  let r = 0, g = 0, bl = 0, alpha = 0;
+  let r = 0, g = 0, bl = 0, alpha = 0, fres = 0;
   if (h > 0) {
     h = Math.sqrt(h);
     const tn = Math.max(-b - h, 0), tf = -b + h;
+    // fresnel rim from the entry point — defines the 3D sphere edge
+    const enx = rox + rdx * tn, eny = roy + rdy * tn, enz = roz + rdz * tn;
+    const nl = Math.hypot(enx, eny, enz) || 1;
+    const ndv = -((enx / nl) * rdx + (eny / nl) * rdy + (enz / nl) * rdz);
+    fres = Math.pow(1 - clamp(ndv, 0, 1), 2.6);
     const dt = (tf - tn) / 48;
     let tt = tn + dt * hash(uvx * 999, uvy * 999, 1);
     for (let i = 0; i < 48; i++) {
@@ -90,14 +95,18 @@ function shade(uvx, uvy, t, scale) {
       const w1 = fbm(sx * 2.0, sy * 2.0 + t, sz * 2.0);
       const w2 = fbm(sx * 2.0 + t, sy * 2.0 + 1, sz * 2.0);
       const w3 = fbm(sx * 2.0, sy * 2.0 + t * 0.7, sz * 2.0 + 2);
-      const qx = sx * 3.0 + 1.1 * w1;
-      const qy = sy * 3.0 + 1.1 * w2;
-      const qz = sz * 3.0 + 1.1 * w3;
-      let d = fbm(qx, qy - t * 1.4, qz);
+      const qx = sx * 3.6 + 0.9 * w1;
+      const qy = sy * 3.6 + 0.9 * w2;
+      const qz = sz * 3.6 + 0.9 * w3;
+      // body + ridged "veins" + fine granulation for crisp surface detail
+      const body = fbm(qx, qy - t * 1.4, qz);
+      const ridg = 1 - Math.abs(2 * noise(qx * 1.6, qy * 1.6 - t, qz * 1.6) - 1);
+      const grain = noise(qx * 4.0, qy * 4.0 - t * 1.2, qz * 4.0);
+      let d = body * 0.6 + ridg * ridg * 0.5 + grain * 0.18;
       const rr = Math.hypot(px, py, pz) / br;
-      let dens = smoothstep(1.0, 0.05, rr) * d;
-      dens = Math.pow(Math.max(dens, 0), 1.8) * 4.2;
-      const temp = dens * (1 - rr * 0.45) + (1 - rr) * 0.4; // hotter core
+      let dens = smoothstep(1.02, 0.0, rr) * d;
+      dens = Math.pow(Math.max(dens, 0), 1.7) * 5.2;
+      const temp = dens * (1 - rr * 0.4) + (1 - rr) * 0.5; // hotter core
       let cr = mix(0.45, 1.0, smoothstep(0.0, 0.55, temp));
       let cg = mix(0.03, 0.2, smoothstep(0.0, 0.55, temp));
       let cb = mix(0.0, 0.03, smoothstep(0.0, 0.55, temp));
@@ -115,25 +124,26 @@ function shade(uvx, uvy, t, scale) {
     }
   }
   const dist = Math.hypot(uvx, uvy);
-  // textured corona: wispy, domain-warped tendrils hugging the sphere
+  // fresnel rim — a bright defined edge so it reads as a 3D orb
+  r += fres * 1.0 * 0.9; g += fres * 0.34 * 0.9; bl += fres * 0.12 * 0.9;
+  // a thin, restrained flame edge (much less smoke than before)
   const ca2 = Math.cos(t * 0.3), sa2 = Math.sin(t * 0.3);
   const hx = ca2 * uvx - sa2 * uvy;
   const hy = sa2 * uvx + ca2 * uvy;
   const wx = fbm(hx * 2.4, hy * 2.4, t * 0.4);
   const wy = fbm(hx * 2.4 + 5, hy * 2.4, t * 0.4 + 2);
-  let wisp = fbm(hx * 2.8 + 1.2 * wx, hy * 2.8 + 1.2 * wy, t * 0.5);
-  wisp = Math.pow(Math.max(wisp, 0), 2.2);
-  const shell = Math.exp(-Math.abs(dist - br * 0.95) * 4.0);
-  const reach = smoothstep(1.18, 0.6, dist); // fade before the edge
-  const corona = shell * wisp * reach * 3.0;
+  let wisp = fbm(hx * 3.0 + 1.0 * wx, hy * 3.0 + 1.0 * wy, t * 0.5);
+  wisp = Math.pow(Math.max(wisp, 0), 2.4);
+  const shell = Math.exp(-Math.abs(dist - br) * 9.0);
+  const corona = shell * wisp * 1.1;
   r += 1.0 * corona; g += 0.34 * corona; bl += 0.13 * corona;
   // tight inner bloom
-  const glow = Math.exp((-dist * 3.4) / br) * 0.26;
+  const glow = Math.exp((-dist * 3.6) / br) * 0.22;
   r += 1.0 * glow; g += 0.3 * glow; bl += 0.12 * glow;
 
-  r *= 1.15; g *= 1.15; bl *= 1.15;
+  r *= 1.18; g *= 1.18; bl *= 1.18;
   r = 1 - Math.exp(-r * 1.5); g = 1 - Math.exp(-g * 1.5); bl = 1 - Math.exp(-bl * 1.5);
-  const vig = smoothstep(1.12, 0.5, dist);
+  const vig = smoothstep(1.15, 0.5, dist);
   r *= vig; g *= vig; bl *= vig;
   return [r, g, bl];
 }
