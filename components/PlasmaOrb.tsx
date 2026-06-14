@@ -23,7 +23,7 @@ float noise(vec3 x){
              mix(mix(hash(i+vec3(0.0,0.0,1.0)),hash(i+vec3(1.0,0.0,1.0)),f.x),
                  mix(hash(i+vec3(0.0,1.0,1.0)),hash(i+vec3(1.0,1.0,1.0)),f.x),f.y),f.z);
 }
-float fbm(vec3 p){ float a=0.5,s=0.0; for(int i=0;i<4;i++){ s+=a*noise(p); p=p*2.03+vec3(1.7,9.2,-3.3); a*=0.5; } return s; }
+float fbm(vec3 p){ float a=0.5,s=0.0; for(int i=0;i<5;i++){ s+=a*noise(p); p=p*2.03+vec3(1.7,9.2,-3.3); a*=0.5; } return s; }
 
 void main(){
   vec2 uv=(gl_FragCoord.xy*2.0-u_res)/u_res.y;
@@ -38,42 +38,49 @@ void main(){
   if(h>0.0){
     h=sqrt(h);
     float tn=max(-b-h,0.0), tf=-b+h;
-    float dt=(tf-tn)/32.0;
+    float dt=(tf-tn)/48.0;
     float tt=tn+dt*hash(vec3(gl_FragCoord.xy,1.0));
-    for(int i=0;i<32;i++){
+    for(int i=0;i<48;i++){
       vec3 pos=ro+rd*tt;
       vec3 sp=pos; sp.xz=mat2(ca,-sa,sa,ca)*sp.xz;
-      vec3 q=sp*2.1;
-      q+=0.85*vec3(fbm(sp*1.6+vec3(0.0,t,0.0)),
-                   fbm(sp*1.6+vec3(t,1.0,0.0)),
-                   fbm(sp*1.6+vec3(0.0,t*0.7,2.0)));
-      float d=fbm(q+vec3(0.0,-t*1.3,0.0));
+      vec3 w=vec3(fbm(sp*2.0+vec3(0.0,t,0.0)),
+                  fbm(sp*2.0+vec3(t,1.0,0.0)),
+                  fbm(sp*2.0+vec3(0.0,t*0.7,2.0)));
+      vec3 q=sp*3.0+1.1*w;
+      float d=fbm(q+vec3(0.0,-t*1.4,0.0));
       float rr=length(pos)/br;
-      float dens=smoothstep(1.0,0.1,rr)*d;
-      dens=pow(max(dens,0.0),2.4)*2.6; // sparse, defined filaments
-      float temp=dens*(1.0-rr*0.5);
-      // deep blood red -> incandescent red-orange core (never white)
-      vec3 cc=mix(vec3(0.32,0.012,0.0),vec3(0.9,0.12,0.02),smoothstep(0.0,0.5,temp));
-      cc=mix(cc,vec3(1.0,0.42,0.14),smoothstep(0.7,1.4,temp));
-      float a=dens*0.1;
+      float dens=smoothstep(1.0,0.05,rr)*d;
+      dens=pow(max(dens,0.0),1.8)*4.2;
+      float temp=dens*(1.0-rr*0.45)+(1.0-rr)*0.4; // hotter core
+      vec3 cc=mix(vec3(0.45,0.03,0.0),vec3(1.0,0.2,0.03),smoothstep(0.0,0.55,temp));
+      cc=mix(cc,vec3(1.0,0.58,0.3),smoothstep(0.75,1.5,temp));
+      float a=dens*0.16;
       col+=cc*a*(1.0-alpha);
       alpha+=a*(1.0-alpha);
-      if(alpha>0.99) break;
+      if(alpha>0.995) break;
       tt+=dt;
     }
   }
   float dist=length(uv);
-  // tight, restrained bloom (not a fill)
-  float glow=exp(-dist*3.8/br)*0.2;
-  col+=vec3(1.0,0.26,0.09)*glow;
+  // textured corona: wispy, domain-warped tendrils hugging the sphere
+  vec2 hv=mat2(ca,-sa,sa,ca)*uv;
+  float wx=fbm(vec3(hv*2.4,t*0.4));
+  float wy=fbm(vec3(hv*2.4+vec2(5.0,0.0),t*0.4+2.0));
+  float wisp=fbm(vec3(hv*2.8+1.2*vec2(wx,wy),t*0.5));
+  wisp=pow(max(wisp,0.0),2.2);
+  float shell=exp(-abs(dist-br*0.95)*4.0);
+  float reach=smoothstep(1.18,0.6,dist);
+  float corona=shell*wisp*reach*3.0;
+  col+=vec3(1.0,0.34,0.13)*corona;
+  // tight inner bloom
+  float glow=exp(-dist*3.4/br)*0.26;
+  col+=vec3(1.0,0.3,0.12)*glow;
 
-  // exposure + filmic tonemap to keep structure and avoid burn-out
-  col*=0.85;
-  col=vec3(1.0)-exp(-col*1.2);
-
+  // exposure + filmic tonemap
+  col*=1.15;
+  col=vec3(1.0)-exp(-col*1.5);
   // vignette to pure black so the canvas square is never visible
-  col*=smoothstep(1.18,0.42,dist);
-
+  col*=smoothstep(1.12,0.5,dist);
   col*=(1.0-u_dim);
   gl_FragColor=vec4(col,1.0);
 }
@@ -166,9 +173,12 @@ export function PlasmaOrb(props: Props) {
     let dim = 0;
     const t0 = performance.now();
     let raf = 0;
+    let lastDraw = 0;
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
+      if (now - lastDraw < 33) return; // ~30fps: easier on the battery
+      lastDraw = now;
       const p = propsRef.current;
       if (tween.to !== p.scale) {
         tween.from = tween.cur;
