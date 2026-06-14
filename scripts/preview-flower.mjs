@@ -44,22 +44,22 @@ const C = centers();
 
 function shade(x, y) {
   let s = 0;
+  let node = 0;
   for (let i = 0; i < C.length; i++) {
     const dx = x - C[i][0], dy = y - C[i][1];
     const d = Math.sqrt(dx * dx + dy * dy) / R;
     // thin ring (circle outline) -> crisp sacred-geometry lattice
-    const ring = smoothstep(0.82, 0.95, d) * (1 - smoothstep(0.95, 1.06, d));
-    s += ring;
+    s += smoothstep(0.82, 0.95, d) * (1 - smoothstep(0.95, 1.06, d));
+    // glowing node of light at each lattice vertex
+    node += Math.exp(-(d * d) / 0.09);
   }
   const dist = Math.hypot(x, y);
-  const glow = Math.exp(-dist * 5.0) * 0.1;
-  const val = s * 1.5 + glow;
-  const lum = 1 - Math.exp(-val * 1.4);
-  // warmer red (toward vermilion, still red — not amber)
+  const glow = Math.exp(-dist * 5.0) * 0.12;
+  const val = s * 1.5 + node * 1.1 + glow;
+  const lum = 1 - Math.exp(-val * 1.5);
   let r = lum;
-  let g = lum * lum * 0.2;
-  let b = lum * lum * 0.06;
-  // radial shading for depth: outer rings fall into shadow
+  let g = lum * lum * 0.22;
+  let b = lum * lum * 0.07;
   const extent = spacing * RINGS + R;
   const shade = 1 - 0.5 * smoothstep(extent * 0.25, extent, dist);
   r *= shade; g *= shade; b *= shade;

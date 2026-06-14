@@ -74,13 +74,13 @@ export function BreathingDot({ scale, phaseMs, dimmed }: Props) {
 
       // rings of energy emanating outward
       if (!reduce) {
-        for (let n = 0; n < 3; n++) {
-          const ph = ((now / 3200 + n / 3) % 1);
-          const rr = r + ph * half * 0.9;
-          const a = (1 - ph) * 0.28 * vis;
+        for (let n = 0; n < 4; n++) {
+          const ph = (now / 2800 + n / 4) % 1;
+          const rr = r + ph * half * 0.95;
+          const a = (1 - ph) * (1 - ph) * 0.38 * vis;
           if (a <= 0.01) continue;
-          ctx.lineWidth = Math.max(1, base * 0.03);
-          ctx.strokeStyle = `rgba(244,90,52,${a})`;
+          ctx.lineWidth = Math.max(1, base * 0.035);
+          ctx.strokeStyle = `rgba(248,96,56,${a})`;
           ctx.beginPath();
           ctx.arc(cx, cy, rr, 0, Math.PI * 2);
           ctx.stroke();

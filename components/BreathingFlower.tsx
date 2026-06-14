@@ -98,10 +98,12 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, half * 2, half * 2);
 
-      // a wave of energy travelling outward through the lattice
-      const pulseR = ((now % 4200) / 4200) * extent * 1.15;
-      const glowW = Math.max(1, rad * 0.34);
-      const coreW = Math.max(0.5, rad * 0.12);
+      // a bright wave of energy racing outward through a dim resting lattice
+      const pulseR = ((now % 3400) / 3400) * extent * 1.2;
+      const bloomW = Math.max(1, rad * 0.55);
+      const glowW = Math.max(1, rad * 0.26);
+      const coreW = Math.max(0.5, rad * 0.1);
+      const nodeR = rad * 0.42;
 
       ctx.globalCompositeOperation = "lighter";
       for (let i = -RINGS; i <= RINGS; i++) {
@@ -114,23 +116,38 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
           const dc = Math.hypot(x, y);
 
           const depth = 1 - 0.5 * smoothstep(extent * 0.25, extent, dc);
-          const shimmer = reduce ? 1 : 0.62 + 0.38 * Math.sin(now * 0.0026 + i * 1.7 + j * 2.3);
-          const pulse = Math.exp(-Math.pow((dc - pulseR) / (extent * 0.14), 2));
-          const a = Math.min(1, 0.55 * shimmer + pulse) * depth * vis;
+          const shimmer = reduce ? 0.6 : 0.5 + 0.5 * Math.sin(now * 0.0028 + i * 1.7 + j * 2.3);
+          const pulse = Math.exp(-Math.pow((dc - pulseR) / (extent * 0.12), 2));
+          const a = Math.min(1, 0.3 * shimmer + 0.95 * pulse) * depth * vis;
           if (a <= 0.012) continue;
 
-          // soft glow pass
+          ctx.lineWidth = bloomW;
+          ctx.strokeStyle = `rgba(190,26,12,${0.09 * a})`;
+          ctx.beginPath();
+          ctx.arc(px, py, rad, 0, Math.PI * 2);
+          ctx.stroke();
           ctx.lineWidth = glowW;
-          ctx.strokeStyle = `rgba(220,32,15,${0.2 * a})`;
+          ctx.strokeStyle = `rgba(228,40,18,${0.2 * a})`;
           ctx.beginPath();
           ctx.arc(px, py, rad, 0, Math.PI * 2);
           ctx.stroke();
-          // bright neon core pass
           ctx.lineWidth = coreW;
-          ctx.strokeStyle = `rgba(255,96,56,${0.92 * a})`;
+          ctx.strokeStyle = `rgba(255,110,66,${0.95 * a})`;
           ctx.beginPath();
           ctx.arc(px, py, rad, 0, Math.PI * 2);
           ctx.stroke();
+
+          // node of light at the vertex, flaring as the wave passes
+          const na = Math.min(1, 0.16 * shimmer + 1.1 * pulse) * depth * vis;
+          if (na > 0.04) {
+            const nd = ctx.createRadialGradient(px, py, 0, px, py, nodeR);
+            nd.addColorStop(0, `rgba(255,150,92,${0.6 * na})`);
+            nd.addColorStop(1, "rgba(255,80,40,0)");
+            ctx.fillStyle = nd;
+            ctx.beginPath();
+            ctx.arc(px, py, nodeR, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
       }
       ctx.globalCompositeOperation = "source-over";
