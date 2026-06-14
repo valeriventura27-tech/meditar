@@ -2,12 +2,13 @@
 
 import { useEffect, useRef } from "react";
 
-// Apple Watch "Breathe"-style flower of life: 19 translucent circles on a hex
-// lattice, additively blended ('lighter') so the vesica overlaps form a crisp
-// mandala. It blooms open on inhale and merges into a bright core on exhale,
-// with a slow rotation. Warm palette only (no blue, for melatonin).
+// Apple Watch "Breathe"-style Flower of Life, drawn as crisp red circle
+// outlines on a hex lattice. The overlapping rings form an intricate
+// sacred-geometry mandala that blooms open on inhale and tightens on exhale,
+// with a slow rotation. Pure red only (no blue, for melatonin).
 
-const RF = 0.22; // circle radius as a fraction of the half-size (smaller mandala)
+const RF = 0.135; // circle radius as a fraction of the half-size (small)
+const RINGS = 3; // hex-lattice rings -> intricate detail
 
 function easeInOut(t: number) {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -52,19 +53,6 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
     let dim = 0;
     let raf = 0;
 
-    const disc = (x: number, y: number, a: number) => {
-      // Pure red, mostly solid with a crisp edge so circles read as defined.
-      const g = ctx.createRadialGradient(x, y, 0, x, y, Rpx);
-      g.addColorStop(0, `rgba(226,16,8,${0.52 * a})`);
-      g.addColorStop(0.78, `rgba(205,12,6,${0.46 * a})`);
-      g.addColorStop(0.9, `rgba(140,8,4,${0.3 * a})`);
-      g.addColorStop(1, "rgba(140,8,4,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, y, Rpx, 0, Math.PI * 2);
-      ctx.fill();
-    };
-
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const p = propsRef.current;
@@ -84,23 +72,36 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
       if (vis < 0.01) return;
 
       const spread = Math.max(0, Math.min(1, tween.cur));
-      const spacing = Rpx * (0.5 + 0.62 * spread);
-      const rot = reduce ? 0.4 : now * 0.00004 + 0.3;
+      const spacing = Rpx * (0.82 + 0.32 * spread);
+      const rot = reduce ? 0.3 : now * 0.00004 + 0.2;
+      const cosR = Math.cos(rot);
+      const sinR = Math.sin(rot);
+      const ax = spacing;
+      const bx = spacing * 0.5;
+      const by = spacing * 0.8660254;
 
+      // faint warm bed so it isn't stark on black
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, spacing * 3.6);
+      g.addColorStop(0, `rgba(150,16,8,${0.16 * vis})`);
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, half * 2, half * 2);
+
+      // crisp red ring lattice, additive so intersections glow
       ctx.globalCompositeOperation = "lighter";
-      disc(cx, cy, vis);
-      for (let k2 = 0; k2 < 6; k2++) {
-        const a = (k2 * Math.PI) / 3 + rot;
-        disc(cx + Math.cos(a) * spacing, cy + Math.sin(a) * spacing, vis);
-      }
-      const s3 = spacing * Math.sqrt(3);
-      for (let k2 = 0; k2 < 6; k2++) {
-        const a = Math.PI / 6 + (k2 * Math.PI) / 3 + rot;
-        disc(cx + Math.cos(a) * s3, cy + Math.sin(a) * s3, vis);
-      }
-      for (let k2 = 0; k2 < 6; k2++) {
-        const a = (k2 * Math.PI) / 3 + rot;
-        disc(cx + Math.cos(a) * spacing * 2, cy + Math.sin(a) * spacing * 2, vis);
+      ctx.lineWidth = Rpx * 0.15;
+      ctx.strokeStyle = `rgba(220,22,11,${0.72 * vis})`;
+      for (let i = -RINGS; i <= RINGS; i++) {
+        for (let j = -RINGS; j <= RINGS; j++) {
+          if ((Math.abs(i) + Math.abs(j) + Math.abs(i + j)) / 2 > RINGS) continue;
+          const x = i * ax + j * bx;
+          const y = j * by;
+          const px = cx + x * cosR - y * sinR;
+          const py = cy + x * sinR + y * cosR;
+          ctx.beginPath();
+          ctx.arc(px, py, Rpx, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
       ctx.globalCompositeOperation = "source-over";
     };

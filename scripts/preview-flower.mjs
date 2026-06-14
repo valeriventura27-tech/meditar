@@ -18,22 +18,24 @@ const smoothstep = (e0, e1, x) => {
   return t * t * (3 - 2 * t);
 };
 
-const R = 0.22; // smaller mandala
-const spacing = R * (0.5 + 0.62 * SPREAD); // centers spread with the breath
+const RINGS = 3; // hex-lattice rings -> more detail
+const R = 0.135; // smaller circles
+const spacing = R * (0.82 + 0.32 * SPREAD); // flower-of-life overlap, breathes
 
 function centers() {
-  const pts = [[0, 0]];
-  for (let k = 0; k < 6; k++) {
-    const a = (k * Math.PI) / 3 + ROT;
-    pts.push([Math.cos(a) * spacing, Math.sin(a) * spacing]);
-  }
-  for (let k = 0; k < 6; k++) {
-    const a = Math.PI / 6 + (k * Math.PI) / 3 + ROT;
-    pts.push([Math.cos(a) * spacing * Math.sqrt(3), Math.sin(a) * spacing * Math.sqrt(3)]);
-  }
-  for (let k = 0; k < 6; k++) {
-    const a = (k * Math.PI) / 3 + ROT;
-    pts.push([Math.cos(a) * spacing * 2, Math.sin(a) * spacing * 2]);
+  const pts = [];
+  const ax = spacing, bx = spacing * 0.5, by = spacing * 0.8660254;
+  for (let i = -RINGS; i <= RINGS; i++) {
+    for (let j = -RINGS; j <= RINGS; j++) {
+      const hexDist = (Math.abs(i) + Math.abs(j) + Math.abs(i + j)) / 2;
+      if (hexDist > RINGS) continue;
+      const x = i * ax + j * bx;
+      const y = j * by;
+      pts.push([
+        x * Math.cos(ROT) - y * Math.sin(ROT),
+        x * Math.sin(ROT) + y * Math.cos(ROT),
+      ]);
+    }
   }
   return pts;
 }
@@ -44,17 +46,19 @@ function shade(x, y) {
   for (let i = 0; i < C.length; i++) {
     const dx = x - C[i][0], dy = y - C[i][1];
     const d = Math.sqrt(dx * dx + dy * dy) / R;
-    s += smoothstep(1.0, 0.9, d); // crisp, defined disc edge
+    // thin ring (circle outline) -> crisp sacred-geometry lattice
+    const ring = smoothstep(0.82, 0.95, d) * (1 - smoothstep(0.95, 1.06, d));
+    s += ring;
   }
   const dist = Math.hypot(x, y);
-  const glow = Math.exp(-dist * 4.0) * 0.12;
-  const val = s * 0.95 + glow;
-  // pure red — brightness only, hue stays red (no amber/green)
-  const lum = 1 - Math.exp(-val * 1.15);
+  const glow = Math.exp(-dist * 4.0) * 0.1;
+  const val = s * 1.5 + glow;
+  // pure red — brightness only
+  const lum = 1 - Math.exp(-val * 1.4);
   const r = lum;
-  const g = lum * lum * 0.14; // tiny, keeps deep red even at overlaps
+  const g = lum * lum * 0.13;
   const b = lum * lum * 0.05;
-  const vig = smoothstep(1.15, 0.7, dist);
+  const vig = smoothstep(1.1, 0.7, dist);
   return [r * vig, g * vig, b * vig];
 }
 
