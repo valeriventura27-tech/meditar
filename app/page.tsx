@@ -36,6 +36,7 @@ export default function Home() {
   const [rhythm, setRhythm] = useState<Rhythm>(COHERENCE);
   const [visual, setVisual] = useState<Visual>("flor");
   const [binaural, setBinaural] = useState(true);
+  const [voice, setVoice] = useState(true);
   const [dimmed, setDimmed] = useState(false);
   const [summary, setSummary] = useState<{
     minutes: number;
@@ -51,6 +52,7 @@ export default function Home() {
     const v = localStorage.getItem("meditar.visual");
     if (v === "flor" || v === "punto") setVisual(v);
     setBinaural(localStorage.getItem("meditar.binaural") !== "off");
+    setVoice(localStorage.getItem("meditar.voice") !== "off");
   }, []);
   const chooseVisual = (v: Visual) => {
     setVisual(v);
@@ -60,6 +62,12 @@ export default function Home() {
     setBinaural((b) => {
       localStorage.setItem("meditar.binaural", b ? "off" : "on");
       return !b;
+    });
+  };
+  const toggleVoice = () => {
+    setVoice((v) => {
+      localStorage.setItem("meditar.voice", v ? "off" : "on");
+      return !v;
     });
   };
 
@@ -97,7 +105,7 @@ export default function Home() {
     audioRef.current = audio;
     const chosen = await resolveRhythm();
     setRhythm(chosen);
-    await audio.start(totalSeconds, binaural);
+    await audio.start(totalSeconds, binaural, voice);
     setDimmed(false);
     setStage("running");
   };
@@ -169,7 +177,7 @@ export default function Home() {
                 </div>
               </Gauge>
               <div className="dur">
-                {[5, 10, 30].map((m) => (
+                {[5, 10, 15, 30].map((m) => (
                   <button
                     key={m}
                     onClick={() => setMinutes(m)}
@@ -288,6 +296,22 @@ export default function Home() {
                   </span>
                 </span>
                 <span className={`switch ${binaural ? "switch--on" : ""}`}>
+                  <span className="switch__knob" />
+                </span>
+              </button>
+
+              <button
+                className="setting-row"
+                onClick={toggleVoice}
+                aria-pressed={voice}
+              >
+                <span className="setting-row__txt">
+                  <span className="setting-row__name">Voz narrada</span>
+                  <span className="setting-row__desc">
+                    Guía hablada en español durante la sesión
+                  </span>
+                </span>
+                <span className={`switch ${voice ? "switch--on" : ""}`}>
                   <span className="switch__knob" />
                 </span>
               </button>

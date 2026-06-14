@@ -22,7 +22,11 @@ const VOL = {
 const FADE_SECONDS = 20;
 
 export type SessionAudio = {
-  start: (totalSeconds: number, binauralOn?: boolean) => Promise<void>;
+  start: (
+    totalSeconds: number,
+    binauralOn?: boolean,
+    voiceOn?: boolean,
+  ) => Promise<void>;
   breathe: (phase: PhaseName, seconds: number) => void;
   fadeOutAndStop: () => Promise<void>;
 };
@@ -47,7 +51,7 @@ export function createSessionAudio(): SessionAudio {
   let stopped = false;
 
   return {
-    async start(totalSeconds: number, binauralOn = true) {
+    async start(totalSeconds: number, binauralOn = true, voiceOn = true) {
       await ctx.resume();
 
       ocean.setVolume(VOL.ocean, 3);
@@ -57,10 +61,12 @@ export function createSessionAudio(): SessionAudio {
       // Binaural needs stereo headphones and the user's setting enabled.
       binaural.setVolume(binauralOn && hasHeadphones ? VOL.binaural : 0, 3);
 
-      // Voice may be absent (no asset generated yet) — degrade silently.
-      voice.play().catch(() => {
-        /* no narration available */
-      });
+      // Voice is optional (and may be absent if no asset yet) — degrade silently.
+      if (voiceOn) {
+        voice.play().catch(() => {
+          /* no narration available */
+        });
+      }
     },
 
     breathe(phase: PhaseName, seconds: number) {

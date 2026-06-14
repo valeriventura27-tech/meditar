@@ -42,9 +42,10 @@ void main(){
   float s=0.0;
   for(int i=-RINGS;i<=RINGS;i++){
     for(int j=-RINGS;j<=RINGS;j++){
-      if(float(abs(i)+abs(j)+abs(i+j))*0.5 > float(RINGS)) continue;
-      float x=float(i)*ax+float(j)*bx;
-      float y=float(j)*by;
+      float fi=float(i), fj=float(j);
+      if((abs(fi)+abs(fj)+abs(fi+fj))*0.5 > float(RINGS)) continue;
+      float x=fi*ax+fj*bx;
+      float y=fj*by;
       float dl=length(vec2(x,y));
       float zf=sqrt(max(0.0,1.0-(dl/Rmax)*(dl/Rmax)));
       float reff=R*(0.42+0.58*zf);
