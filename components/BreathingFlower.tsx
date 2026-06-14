@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 // mandala. It blooms open on inhale and merges into a bright core on exhale,
 // with a slow rotation. Warm palette only (no blue, for melatonin).
 
-const RF = 0.3; // circle radius as a fraction of the half-size
+const RF = 0.22; // circle radius as a fraction of the half-size (smaller mandala)
 
 function easeInOut(t: number) {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -53,10 +53,12 @@ export function BreathingFlower({ scale, phaseMs, dimmed }: Props) {
     let raf = 0;
 
     const disc = (x: number, y: number, a: number) => {
+      // Pure red, mostly solid with a crisp edge so circles read as defined.
       const g = ctx.createRadialGradient(x, y, 0, x, y, Rpx);
-      g.addColorStop(0, `rgba(255,132,72,${0.5 * a})`);
-      g.addColorStop(0.55, `rgba(226,56,28,${0.28 * a})`);
-      g.addColorStop(1, "rgba(150,25,12,0)");
+      g.addColorStop(0, `rgba(226,16,8,${0.52 * a})`);
+      g.addColorStop(0.78, `rgba(205,12,6,${0.46 * a})`);
+      g.addColorStop(0.9, `rgba(140,8,4,${0.3 * a})`);
+      g.addColorStop(1, "rgba(140,8,4,0)");
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(x, y, Rpx, 0, Math.PI * 2);

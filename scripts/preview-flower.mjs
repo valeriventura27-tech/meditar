@@ -18,8 +18,8 @@ const smoothstep = (e0, e1, x) => {
   return t * t * (3 - 2 * t);
 };
 
-const R = 0.30; // circle radius (uv units)
-const spacing = R * (0.5 + 0.6 * SPREAD); // centers spread with the breath
+const R = 0.22; // smaller mandala
+const spacing = R * (0.5 + 0.62 * SPREAD); // centers spread with the breath
 
 function centers() {
   const pts = [[0, 0]];
@@ -44,18 +44,17 @@ function shade(x, y) {
   for (let i = 0; i < C.length; i++) {
     const dx = x - C[i][0], dy = y - C[i][1];
     const d = Math.sqrt(dx * dx + dy * dy) / R;
-    s += smoothstep(1.0, 0.82, d); // soft-edged disc
+    s += smoothstep(1.0, 0.9, d); // crisp, defined disc edge
   }
-  // s: 0..~4 (overlaps brighter). Warm ramp + bloom.
   const dist = Math.hypot(x, y);
-  const glow = Math.exp(-dist * 2.6) * 0.25;
-  let r = 1 - Math.exp(-s * 0.95 - glow * 1.0);
-  let g = (1 - Math.exp(-s * 0.55 - glow * 0.4)) * 0.62;
-  let b = (1 - Math.exp(-s * 0.32 - glow * 0.15)) * 0.32;
-  // brighten overlap nodes toward incandescent amber
-  const hot = smoothstep(2.2, 3.4, s);
-  r = r + hot * 0.0; g = g + hot * 0.22; b = b + hot * 0.18;
-  const vig = smoothstep(1.2, 0.6, dist);
+  const glow = Math.exp(-dist * 4.0) * 0.12;
+  const val = s * 0.95 + glow;
+  // pure red — brightness only, hue stays red (no amber/green)
+  const lum = 1 - Math.exp(-val * 1.15);
+  const r = lum;
+  const g = lum * lum * 0.14; // tiny, keeps deep red even at overlaps
+  const b = lum * lum * 0.05;
+  const vig = smoothstep(1.15, 0.7, dist);
   return [r * vig, g * vig, b * vig];
 }
 
