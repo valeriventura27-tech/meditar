@@ -1,9 +1,8 @@
 "use client";
 
-// Athlytic-style floating bottom tab bar. Inactive tabs show only their icon
-// (so four fit comfortably); the active tab expands with its label.
+// Athlytic-style floating bottom tab bar.
 
-export type Tab = "inicio" | "tendencias" | "clima" | "ajustes";
+export type Tab = "inicio" | "tendencias" | "ajustes";
 
 const Inicio = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
@@ -15,13 +14,6 @@ const Tendencias = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3,15 8,10 13,13 21,4" />
     <polyline points="16,4 21,4 21,9" />
-  </svg>
-);
-const Clima = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 3v9" />
-    <circle cx="12" cy="16.5" r="3.6" />
-    <path d="M12 14.2v2.3" />
   </svg>
 );
 const Ajustes = () => (
@@ -36,29 +28,24 @@ const Ajustes = () => (
 const ITEMS: { id: Tab; label: string; Icon: () => JSX.Element }[] = [
   { id: "inicio", label: "Inicio", Icon: Inicio },
   { id: "tendencias", label: "Tendencias", Icon: Tendencias },
-  { id: "clima", label: "Clima", Icon: Clima },
   { id: "ajustes", label: "Ajustes", Icon: Ajustes },
 ];
 
 export function TabBar({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
   return (
     <nav className="tabbar">
-      {ITEMS.map(({ id, label, Icon }) => {
-        const on = tab === id;
-        return (
-          <button
-            key={id}
-            className={`tab ${on ? "tab--on" : ""}`}
-            onClick={() => onTab(id)}
-            aria-label={label}
-          >
-            <span className="tab__icon">
-              <Icon />
-            </span>
-            {on && <span className="tab__label">{label}</span>}
-          </button>
-        );
-      })}
+      {ITEMS.map(({ id, label, Icon }) => (
+        <button
+          key={id}
+          className={`tab ${tab === id ? "tab--on" : ""}`}
+          onClick={() => onTab(id)}
+        >
+          <span className="tab__icon">
+            <Icon />
+          </span>
+          <span className="tab__label">{label}</span>
+        </button>
+      ))}
     </nav>
   );
 }
