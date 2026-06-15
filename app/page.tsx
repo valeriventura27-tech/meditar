@@ -8,6 +8,7 @@ import { RhythmMenu, RHYTHM_SHORT } from "@/components/RhythmMenu";
 import { Gauge } from "@/components/Gauge";
 import { TabBar, type Tab } from "@/components/TabBar";
 import { HrvChart } from "@/components/HrvChart";
+import { Weather } from "@/components/Weather";
 import { useBreathingEngine } from "@/lib/useBreathingEngine";
 import { RHYTHMS, makeAdaptiveRhythm, type Rhythm } from "@/lib/rhythms";
 import { chooseAdaptiveStart, readOvernightHRV } from "@/lib/health/healthkit";
@@ -259,6 +260,8 @@ export default function Home() {
             </section>
           </>
         )}
+
+        {tab === "clima" && <Weather />}
 
         {tab === "ajustes" && (
           <>
