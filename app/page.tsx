@@ -1,386 +1,199 @@
-"use client";
+'use client';
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { loadState, saveState } from '@/lib/storage';
+import { ensureIntroduced } from '@/lib/engine';
+import type { State, Voucher } from '@/lib/types';
+import { Garden } from '@/components/Garden';
+import { VoucherCard } from '@/components/VoucherCard';
+import { PinInput } from '@/components/PinInput';
 
-import { useEffect, useRef, useState } from "react";
-import { BreathingFlower } from "@/components/BreathingFlower";
-import { BreathingDot } from "@/components/BreathingDot";
-import { PhaseLabel } from "@/components/PhaseLabel";
-import { RhythmMenu, RHYTHM_SHORT } from "@/components/RhythmMenu";
-import { Gauge } from "@/components/Gauge";
-import { TabBar, type Tab } from "@/components/TabBar";
-import { HrvChart } from "@/components/HrvChart";
-import { useBreathingEngine } from "@/lib/useBreathingEngine";
-import { RHYTHMS, makeAdaptiveRhythm, type Rhythm } from "@/lib/rhythms";
-import { chooseAdaptiveStart, readOvernightHRV } from "@/lib/health/healthkit";
-import { createSessionAudio, type SessionAudio } from "@/lib/audio/session-audio";
+// ── PIN Setup screen (first run) ─────────────────────────────────────────────
+function PinSetupScreen({ onDone }: { onDone: (pin: string) => void }) {
+  const [step, setStep] = useState<'enter' | 'confirm'>('enter');
+  const [first, setFirst] = useState('');
 
-const DESC: Record<string, string> = {
-  coherencia: "el equilibrio",
-  "478": "para soltar el día",
-  caja: "calma estable",
-  adaptativo: "se ajusta a tu HRV",
-};
-
-type Stage = "home" | "running" | "done";
-type Visual = "flor" | "punto";
-
-const COHERENCE = RHYTHMS[0];
-
-// Sample HRV history for the Trends tab (until HealthKit is connected).
-const HRV_SERIES = [46, 43, 49, 51, 47, 54, 50, 57, 53, 59, 56, 61, 58, 63];
-
-export default function Home() {
-  const [stage, setStage] = useState<Stage>("home");
-  const [tab, setTab] = useState<Tab>("inicio");
-  const [selectedId, setSelectedId] = useState(COHERENCE.id);
-  const [minutes, setMinutes] = useState(10);
-  const [rhythm, setRhythm] = useState<Rhythm>(COHERENCE);
-  const [visual, setVisual] = useState<Visual>("flor");
-  const [binaural, setBinaural] = useState(true);
-  const [voice, setVoice] = useState(true);
-  const [dimmed, setDimmed] = useState(false);
-  const [summary, setSummary] = useState<{
-    minutes: number;
-    rhythmId: string;
-    hrv: number | null;
-  } | null>(null);
-
-  const audioRef = useRef<SessionAudio | null>(null);
-  const totalSeconds = minutes * 60;
-
-  // Persisted preferences.
-  useEffect(() => {
-    const v = localStorage.getItem("meditar.visual");
-    if (v === "flor" || v === "punto") setVisual(v);
-    setBinaural(localStorage.getItem("meditar.binaural") !== "off");
-    setVoice(localStorage.getItem("meditar.voice") !== "off");
-  }, []);
-  const chooseVisual = (v: Visual) => {
-    setVisual(v);
-    localStorage.setItem("meditar.visual", v);
-  };
-  const toggleBinaural = () => {
-    setBinaural((b) => {
-      localStorage.setItem("meditar.binaural", b ? "off" : "on");
-      return !b;
-    });
-  };
-  const toggleVoice = () => {
-    setVoice((v) => {
-      localStorage.setItem("meditar.voice", v ? "off" : "on");
-      return !v;
-    });
+  const handleFirst = (pin: string) => {
+    setFirst(pin);
+    setStep('confirm');
   };
 
-  const handleComplete = async () => {
-    setDimmed(true);
-    await audioRef.current?.fadeOutAndStop();
-    const hrv = await readOvernightHRV();
-    setSummary({ minutes, rhythmId: rhythm.id, hrv });
-    setStage("done");
-  };
-
-  const breathing = useBreathingEngine(
-    rhythm,
-    totalSeconds,
-    stage === "running",
-    handleComplete,
-    (phase, seconds) => audioRef.current?.breathe(phase, seconds),
-  );
-
-  const resolveRhythm = async (): Promise<Rhythm> => {
-    if (selectedId !== "adaptativo") {
-      return RHYTHMS.find((r) => r.id === selectedId) ?? COHERENCE;
+  const handleConfirm = (pin: string) => {
+    if (pin === first) {
+      onDone(pin);
+    } else {
+      setStep('enter');
+      setFirst('');
     }
-    // Adaptive (Layer 1): read overnight HRV; degrade to coherence if denied.
-    const start = await chooseAdaptiveStart();
-    return start.available
-      ? makeAdaptiveRhythm(start.startBelowBaseline)
-      : COHERENCE;
   };
 
-  const handleStart = async () => {
-    // Create + unlock audio synchronously within the tap (iOS), before the
-    // HRV read can break the user gesture.
-    const audio = createSessionAudio();
-    audioRef.current = audio;
-    const chosen = await resolveRhythm();
-    setRhythm(chosen);
-    await audio.start(totalSeconds, binaural, voice);
-    setDimmed(false);
-    setStage("running");
-  };
+  return (
+    <div className="min-h-screen bg-yellow-50 flex flex-col items-center justify-center px-6 py-12 gap-8">
+      <div className="text-center space-y-3">
+        <p className="text-5xl">🌱</p>
+        <h1 className="text-3xl font-extrabold text-green-900">El Jardí dels Números</h1>
+        <p className="text-lg text-slate-600">Benvinguda! Primer hem de configurar un PIN per a les persones adultes.</p>
+      </div>
 
-  const endEarly = () => {
-    if (stage === "running") handleComplete();
-  };
-
-  const backToMenu = () => {
-    setSummary(null);
-    setDimmed(false);
-    setTab("inicio");
-    setStage("home");
-  };
-
-  if (stage === "home") {
-    const hour = new Date().getHours();
-    const greeting =
-      hour >= 21 || hour < 5
-        ? "Buenas noches"
-        : hour < 12
-          ? "Buenos días"
-          : "Buenas tardes";
-    const dateLabel = new Date().toLocaleDateString("es-ES", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
-
-    const cur = HRV_SERIES[HRV_SERIES.length - 1];
-    const base = HRV_SERIES.reduce((a, b) => a + b, 0) / HRV_SERIES.length;
-    const recovery = Math.min(100, Math.round((cur / base) * 72));
-    const stress = Math.max(5, Math.min(95, Math.round(100 - (cur - 38) * 2.4)));
-    const stressLabel = stress < 35 ? "Bajo" : stress < 65 ? "Medio" : "Alto";
-
-    const name = "Valeri";
-    const insight =
-      stress >= 65
-        ? `Tu estrés está alto, ${name}. Te recomiendo 15 min de 4·7·8 para ajustar tu HRV antes de dormir y amanecer más descansado.`
-        : stress >= 35
-          ? `Estrés moderado, ${name}. 10 min de Coherencia 5,5 te ayudarán a soltar el día y dormir mejor.`
-          : `Vas en calma, ${name}. Con 5 min de Coherencia entrarás en un descanso profundo.`;
-
-    const VISUALS: { id: Visual; name: string; desc: string }[] = [
-      { id: "flor", name: "Flor de la vida", desc: "geometría viva que florece" },
-      { id: "punto", name: "Punto", desc: "una luz que respira" },
-    ];
-
-    return (
-      <main className="home dash fade-in">
-        {tab === "inicio" && (
+      <div className="w-full max-w-xs space-y-4">
+        {step === 'enter' ? (
           <>
-            <header className="home__head">
-              <h1 className="home__hi">{greeting}</h1>
-              <p className="home__date">{dateLabel}</p>
-            </header>
-
-            <p className="insight">{insight}</p>
-
-            <section className="card hero">
-              <Gauge fill={minutes / 30}>
-                <div className="hero__c">
-                  <span className="hero__rhythm">{RHYTHM_SHORT[selectedId]}</span>
-                  <span className="hero__num">
-                    {minutes}
-                    <i className="hero__unit">min</i>
-                  </span>
-                  <span className="hero__hint">{DESC[selectedId]}</span>
-                </div>
-              </Gauge>
-              <div className="dur">
-                {[5, 10, 15, 30].map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setMinutes(m)}
-                    className={`dur__pill ${minutes === m ? "dur__pill--on" : ""}`}
-                  >
-                    {m} min
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <RhythmMenu selectedId={selectedId} onSelect={setSelectedId} />
-
-            <button className="cta" onClick={handleStart}>
-              Empezar
+            <p className="text-center text-slate-700 font-semibold">
+              Escriu un PIN de 4 xifres (adult/a)
+            </p>
+            <PinInput onComplete={handleFirst} />
+          </>
+        ) : (
+          <>
+            <p className="text-center text-slate-700 font-semibold">
+              Confirma el PIN
+            </p>
+            <PinInput
+              onComplete={handleConfirm}
+              errorMessage={undefined}
+            />
+            <button
+              onClick={() => { setStep('enter'); setFirst(''); }}
+              className="w-full text-slate-400 text-sm underline text-center"
+            >
+              Tornar a escriure
             </button>
           </>
         )}
+      </div>
+    </div>
+  );
+}
 
-        {tab === "tendencias" && (
-          <>
-            <header className="home__head">
-              <h1 className="home__hi">Tendencias</h1>
-              <p className="home__date">Tu recuperación</p>
-            </header>
+// ── Home screen ───────────────────────────────────────────────────────────────
+export default function HomePage() {
+  const router = useRouter();
+  const [state, setState] = useState<State | null>(null);
 
-            <section className="card">
-              <span className="card__title">Recuperación</span>
-              <div className="stat">
-                <span className="stat__num">
-                  {recovery}
-                  <i className="stat__unit">%</i>
-                </span>
-                <span className="stat__label">Listo para descansar</span>
-              </div>
-              <div className="bar">
-                <div className="bar__fill" style={{ width: `${recovery}%` }} />
-              </div>
-            </section>
+  useEffect(() => {
+    const s = loadState();
+    // Ensure initial facts are introduced
+    s.facts = ensureIntroduced(s.facts, s.settings);
+    saveState(s);
+    setState(s);
+  }, []);
 
-            <section className="card">
-              <div className="card__row">
-                <span className="card__title">Variabilidad · VFC</span>
-                <span className="card__big">{cur} ms</span>
-              </div>
-              <HrvChart data={HRV_SERIES} />
-              <p className="caption">Últimas 14 noches · datos de ejemplo</p>
-            </section>
+  const handlePinSetup = useCallback((pin: string) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const next = { ...prev, settings: { ...prev.settings, parentPin: pin } };
+      saveState(next);
+      return next;
+    });
+  }, []);
 
-            <section className="card">
-              <span className="card__title">Estrés</span>
-              <div className="stat">
-                <span className="stat__num stat__num--stress">{stress}</span>
-                <span className="stat__label">{stressLabel}</span>
-              </div>
-              <div className="bar">
-                <div
-                  className="bar__fill bar__fill--stress"
-                  style={{ width: `${stress}%` }}
-                />
-              </div>
-            </section>
+  const handleValidateVoucher = useCallback((voucherId: string) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const voucher = prev.vouchers.find(v => v.id === voucherId);
+      if (!voucher) return prev;
+      const now = Date.now();
+      const updated: Voucher = {
+        ...voucher,
+        status: 'active',
+        validatedByAdult: true,
+        validatedAt: now,
+        activatedAt: now,
+        expiresAt: now + voucher.minutes * 60 * 1000,
+      };
+      const next = {
+        ...prev,
+        vouchers: prev.vouchers.map(v => v.id === voucherId ? updated : v),
+      };
+      saveState(next);
+      return next;
+    });
+  }, []);
 
-            <section className="card">
-              <div className="metrics">
-                <div className="metric">
-                  <span className="metric__v">{Math.round(base)}</span>
-                  <span className="metric__k">VFC base</span>
-                </div>
-                <div className="metric">
-                  <span className="metric__v">58</span>
-                  <span className="metric__k">FC reposo</span>
-                </div>
-                <div className="metric">
-                  <span className="metric__v">7,4 h</span>
-                  <span className="metric__k">Sueño</span>
-                </div>
-              </div>
-            </section>
-          </>
-        )}
+  const handleMarkUsed = useCallback((voucherId: string) => {
+    setState(prev => {
+      if (!prev) return prev;
+      const next = {
+        ...prev,
+        vouchers: prev.vouchers.map(v =>
+          v.id === voucherId ? { ...v, status: 'used' as const } : v,
+        ),
+      };
+      saveState(next);
+      return next;
+    });
+  }, []);
 
-        {tab === "ajustes" && (
-          <>
-            <header className="home__head">
-              <h1 className="home__hi">Ajustes</h1>
-              <p className="home__date">Personaliza tu sesión</p>
-            </header>
-            <section className="card">
-              <span className="card__title">Visual de la sesión</span>
-              <div className="opts">
-                {VISUALS.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => chooseVisual(v.id)}
-                    className={`opt ${visual === v.id ? "opt--on" : ""}`}
-                  >
-                    <span className="opt__name">{v.name}</span>
-                    <span className="opt__desc">{v.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="card">
-              <span className="card__title">Sonido</span>
-              <button
-                className="setting-row"
-                onClick={toggleBinaural}
-                aria-pressed={binaural}
-              >
-                <span className="setting-row__txt">
-                  <span className="setting-row__name">Ruido binaural</span>
-                  <span className="setting-row__desc">
-                    Latido theta→delta · requiere auriculares
-                  </span>
-                </span>
-                <span className={`switch ${binaural ? "switch--on" : ""}`}>
-                  <span className="switch__knob" />
-                </span>
-              </button>
-
-              <button
-                className="setting-row"
-                onClick={toggleVoice}
-                aria-pressed={voice}
-              >
-                <span className="setting-row__txt">
-                  <span className="setting-row__name">Voz narrada</span>
-                  <span className="setting-row__desc">
-                    Guía hablada en español durante la sesión
-                  </span>
-                </span>
-                <span className={`switch ${voice ? "switch--on" : ""}`}>
-                  <span className="switch__knob" />
-                </span>
-              </button>
-            </section>
-          </>
-        )}
-
-        <TabBar tab={tab} onTab={setTab} />
-      </main>
-    );
-  }
-
-  if (stage === "running") {
-    const Visualizer = visual === "flor" ? BreathingFlower : BreathingDot;
+  if (!state) {
     return (
-      <main
-        onClick={endEarly}
-        className="fade-in relative flex min-h-screen flex-col items-center justify-center"
-      >
-        <Visualizer
-          scale={breathing.scale}
-          phaseMs={breathing.phaseMs}
-          dimmed={dimmed}
-        />
-        <PhaseLabel phase={dimmed ? null : breathing.phase} />
-      </main>
+      <div className="min-h-screen bg-yellow-50 flex items-center justify-center">
+        <p className="text-2xl text-green-700">🌱 Carregant...</p>
+      </div>
     );
   }
 
-  // done — closing summary dashboard, same language as the home
+  if (!state.settings.parentPin) {
+    return <PinSetupScreen onDone={handlePinSetup} />;
+  }
+
+  const activeVouchers = state.vouchers.filter(
+    v => v.status === 'pending' || v.status === 'active',
+  );
+
   return (
-    <main className="home fade-in">
-      <header className="home__head">
-        <h1 className="home__hi">Buenas noches</h1>
-        <p className="home__date">Sesión completada</p>
-      </header>
+    <main className="min-h-screen bg-yellow-50">
+      <div className="max-w-lg mx-auto px-5 py-8 space-y-6">
 
-      <section className="card hero">
-        <Gauge fill={1}>
-          <div className="hero__c">
-            <span className="hero__rhythm">
-              {summary ? RHYTHM_SHORT[summary.rhythmId] : ""}
-            </span>
-            <span className="hero__num">
-              {summary?.minutes}
-              <i className="hero__unit">min</i>
-            </span>
-            <span className="hero__hint">completado</span>
-          </div>
-        </Gauge>
-      </section>
+        {/* Header */}
+        <header className="text-center space-y-1">
+          <h1 className="text-4xl font-extrabold text-green-900">
+            El Jardí dels Números 🌱
+          </h1>
+          {state.streak.current > 0 && (
+            <p className="text-xl text-amber-700 font-bold">
+              🔥 {state.streak.current}{' '}
+              {state.streak.current === 1 ? 'dia seguit' : 'dies seguits'}
+            </p>
+          )}
+        </header>
 
-      <section className="card hrv">
-        <span className="card__title">Recuperación</span>
-        {summary?.hrv != null ? (
-          <div className="hrv__val">
-            <span className="hrv__num">{Math.round(summary.hrv)}</span>
-            <span className="hrv__unit">ms · VFC anoche</span>
-          </div>
-        ) : (
-          <p className="hrv__connect">
-            Conecta Salud para ver cómo esta sesión mejora tu descanso.
-          </p>
+        {/* Active vouchers */}
+        {activeVouchers.length > 0 && (
+          <section className="space-y-3">
+            {activeVouchers.map(v => (
+              <VoucherCard
+                key={v.id}
+                voucher={v}
+                correctPin={state.settings.parentPin!}
+                onValidate={handleValidateVoucher}
+                onMarkUsed={handleMarkUsed}
+              />
+            ))}
+          </section>
         )}
-      </section>
 
-      <button className="cta" onClick={backToMenu}>
-        Descansa
-      </button>
+        {/* Garden */}
+        <Garden facts={state.facts} tablesRange={state.settings.tablesRange} />
+
+        {/* Start button */}
+        <button
+          onClick={() => router.push('/session')}
+          className="w-full bg-green-600 hover:bg-green-700 active:scale-95 text-white font-extrabold text-3xl py-6 rounded-3xl shadow-lg transition-all"
+        >
+          Comencem! 🌻
+        </button>
+
+        {/* Adults link */}
+        <div className="text-center pt-2">
+          <button
+            onClick={() => router.push('/adults')}
+            className="text-slate-400 text-base underline"
+          >
+            Zona de persones adultes
+          </button>
+        </div>
+
+      </div>
     </main>
   );
 }

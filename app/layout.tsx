@@ -1,36 +1,44 @@
-import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import { Nunito } from 'next/font/google';
+import './globals.css';
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 
-// SF Rounded isn't on the web; Nunito is the closest warm, rounded stand-in.
 const rounded = Nunito({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-  variable: "--font-rounded",
-  display: "swap",
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-rounded',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "meditar",
-  description: "Respira con la luz. Duerme mejor.",
+  title: 'El Jardí dels Números',
+  description: 'Pràctica de multiplicacions i divisions per a la Valeria',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Jardí Núm.',
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
-  width: "device-width",
+  themeColor: '#166534',
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  viewportFit: "cover",
+  viewportFit: 'cover',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={rounded.variable}>
-      <body>{children}</body>
+    <html lang="ca" className={rounded.variable}>
+      <head>
+        <link rel="apple-touch-icon" href="/icon.svg" />
+      </head>
+      <body>
+        <ServiceWorkerRegistration />
+        {children}
+      </body>
     </html>
   );
 }
