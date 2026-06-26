@@ -266,6 +266,7 @@ export function runEngineSimulation(): {
     voucherMinutes: 60,
     soundEnabled: false,
     ttsEnabled: false,
+    reportEmails: [],
   };
 
   const mockFacts: Record<string, FactStat> = {};

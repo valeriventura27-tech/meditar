@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   voucherMinutes: 60,
   soundEnabled: true,
   ttsEnabled: false,
+  reportEmails: ['valeriventura27@gmail.com', 'nataliagimenez82@gmail.com'],
 };
 
 export function defaultState(): State {

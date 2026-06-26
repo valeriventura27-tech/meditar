@@ -52,6 +52,7 @@ export interface Settings {
   voucherMinutes: number;
   soundEnabled: boolean;
   ttsEnabled: boolean;
+  reportEmails: string[];
 }
 
 export interface State {

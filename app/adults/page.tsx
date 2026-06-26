@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearState, DEFAULT_SETTINGS, loadState, saveState } from '@/lib/storage';
 import { parseFact, getOrderedFactKeys, runEngineSimulation, defaultFactStat } from '@/lib/engine';
+import { computeInsights, insightsToPlainText } from '@/lib/insights';
 import type { Session, Settings, State } from '@/lib/types';
 import { PinInput } from '@/components/PinInput';
 import {
@@ -193,33 +194,60 @@ function SessionChart({ sessions }: { sessions: Session[] }) {
   );
 }
 
-// ── Weekly summary ────────────────────────────────────────────────────────────
-function WeeklySummary({ state }: { state: State }) {
-  const ordered = getOrderedFactKeys(state.settings);
-  const weak = ordered
-    .filter(k => state.facts[k]?.introduced && (state.facts[k]?.mastery ?? 0) < 0.5)
-    .sort((a, b) => (state.facts[a]?.mastery ?? 0) - (state.facts[b]?.mastery ?? 0))
-    .slice(0, 3);
+// ── Key insights (plain-language summary) ─────────────────────────────────────
+const TONE_STYLES: Record<string, string> = {
+  good: 'bg-green-50 border-green-200',
+  neutral: 'bg-slate-50 border-slate-200',
+  attention: 'bg-amber-50 border-amber-200',
+};
 
-  const weakDesc = weak.map(k => parseFact(k).questionText).join(', ');
+function InsightsCard({ state }: { state: State }) {
+  const insights = computeInsights(state);
+  const emails = state.settings.reportEmails;
+
+  const handleEmail = () => {
+    const subject = 'El Jardí dels Números — com va la Valeria';
+    const body = insightsToPlainText(state);
+    const to = emails.join(',');
+    window.location.href = `mailto:${to}?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(body)}`;
+  };
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-1">
-      <p className="font-bold text-blue-900 text-sm">Resum setmanal</p>
-      {weakDesc ? (
-        <p className="text-blue-800 text-sm">
-          Costa: <strong>{weakDesc}</strong>
-        </p>
+    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
+      <h3 className="font-bold text-slate-800 text-lg">Com va la Valeria</h3>
+
+      <div className="space-y-2">
+        {insights.map((i, idx) => (
+          <div
+            key={idx}
+            className={`flex gap-3 rounded-xl border p-3 ${TONE_STYLES[i.tone]}`}
+          >
+            <span className="text-2xl leading-none shrink-0">{i.emoji}</span>
+            <div className="space-y-0.5">
+              <p className="font-bold text-slate-800 text-sm">{i.title}</p>
+              <p className="text-slate-600 text-sm">{i.detail}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {emails.length > 0 ? (
+        <button
+          onClick={handleEmail}
+          className="w-full bg-blue-600 text-white font-bold py-3 rounded-2xl hover:bg-blue-700 transition-colors"
+        >
+          📧 Enviar resum per correu
+        </button>
       ) : (
-        <p className="text-blue-700 text-sm">
-          Molt bé! No hi ha hechos molt dèbils ara.
+        <p className="text-xs text-slate-400 text-center">
+          Afegeix correus a Ajustos per poder enviar el resum.
         </p>
       )}
-      {state.sessions.length > 0 && (
-        <p className="text-blue-700 text-sm">
-          Sessions totals: <strong>{state.sessions.length}</strong> ·
-          Aprovades:{' '}
-          <strong>{state.sessions.filter(s => s.passed).length}</strong>
+      {emails.length > 0 && (
+        <p className="text-xs text-slate-400 text-center">
+          S&apos;obrirà el correu cap a: {emails.join(', ')}
         </p>
       )}
     </div>
@@ -426,6 +454,31 @@ function SettingsForm({
           </label>
         </div>
       </div>
+
+      {/* Report emails */}
+      <label className="block space-y-1">
+        <span className="text-sm font-semibold text-slate-700">
+          Correus per als resums
+        </span>
+        <input
+          type="text"
+          value={form.reportEmails.join(', ')}
+          onChange={e =>
+            setForm(prev => ({
+              ...prev,
+              reportEmails: e.target.value
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean),
+            }))
+          }
+          placeholder="correu1@exemple.com, correu2@exemple.com"
+          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+        />
+        <span className="text-xs text-slate-400">
+          Separa els correus amb comes.
+        </span>
+      </label>
 
       {/* Change PIN */}
       {!changingPin ? (
@@ -639,7 +692,7 @@ export default function AdultsPage() {
         {activeTab === 'stats' && (
           <div className="space-y-6">
 
-            <WeeklySummary state={state} />
+            <InsightsCard state={state} />
 
             {/* Session accuracy chart */}
             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
