@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearState, DEFAULT_SETTINGS, loadState, saveState } from '@/lib/storage';
-import { parseFact, getOrderedFactKeys, runEngineSimulation } from '@/lib/engine';
+import { parseFact, getOrderedFactKeys, runEngineSimulation, defaultFactStat } from '@/lib/engine';
 import type { Session, Settings, State } from '@/lib/types';
 import { PinInput } from '@/components/PinInput';
 import {
@@ -545,6 +545,22 @@ export default function AdultsPage() {
     router.push('/');
   }, [router]);
 
+  const handleUnlockBig = useCallback(() => {
+    if (!state) return;
+    const updatedFacts = { ...state.facts };
+    for (const n of [2, 3, 4, 5, 6, 7, 8, 9]) {
+      const k = `b_${n}`;
+      updatedFacts[k] = { ...(updatedFacts[k] ?? defaultFactStat()), introduced: true };
+    }
+    const next = {
+      ...state,
+      facts: updatedFacts,
+      settings: { ...state.settings, ops: { ...state.settings.ops, multBig: true } },
+    };
+    saveState(next);
+    setState(next);
+  }, [state]);
+
   if (!state) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -654,6 +670,16 @@ export default function AdultsPage() {
                   Domini per multiplicador (ex: 23 × 4)
                 </p>
                 <TwoDigitProgress state={state} />
+                {[2,3,4,5,6,7,8,9].every(n => state.facts[`b_${n}`]?.introduced) ? (
+                  <p className="text-xs text-green-600 font-semibold">✓ Repte activat</p>
+                ) : (
+                  <button
+                    onClick={handleUnlockBig}
+                    className="w-full bg-amber-500 text-white font-bold py-2.5 rounded-xl hover:bg-amber-600 transition-colors text-sm"
+                  >
+                    Activar el repte de dues xifres ara
+                  </button>
+                )}
               </div>
             )}
 
