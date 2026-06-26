@@ -183,6 +183,14 @@ export default function HomePage() {
           Comencem! 🌻
         </button>
 
+        {/* Challenge button */}
+        <button
+          onClick={() => router.push('/challenge')}
+          className="w-full bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-extrabold text-2xl py-5 rounded-3xl shadow-md transition-all"
+        >
+          Repte a dos! 🎮
+        </button>
+
         {/* Adults link */}
         <div className="text-center pt-2">
           <button
