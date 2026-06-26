@@ -80,6 +80,7 @@ export default function SessionPage() {
   const [extraIdx, setExtraIdx] = useState(0);
   const [extraQuestions, setExtraQuestions] = useState<string[]>([]);
   const [extraAnswers, setExtraAnswers] = useState<AnswerRecord[]>([]);
+  const [leveledUp, setLeveledUp] = useState(false);
 
   const startMsRef = useRef<number>(Date.now());
   const sessionStartRef = useRef<number>(Date.now());
@@ -313,16 +314,38 @@ export default function SessionPage() {
       // Also introduce new facts if mean mastery is high enough
       const updatedFacts = ensureIntroduced(currentState.facts, currentState.settings);
 
+      // Auto-escalate voucher difficulty after 4 consecutive passed sessions
+      const allSessions = [...currentState.sessions, session];
+      const consecutivePassed = (() => {
+        let n = 0;
+        for (let i = allSessions.length - 1; i >= 0; i--) {
+          if (allSessions[i].passed) n++;
+          else break;
+        }
+        return n;
+      })();
+      const ESCALATE_AFTER = 4;
+      const MAX_ACCURACY = 0.90;
+      const didLevel =
+        passed &&
+        consecutivePassed >= ESCALATE_AFTER &&
+        currentState.settings.minAccuracy < MAX_ACCURACY;
+      const newMinAccuracy = didLevel
+        ? Math.min(MAX_ACCURACY, Math.round((currentState.settings.minAccuracy + 0.05) * 100) / 100)
+        : currentState.settings.minAccuracy;
+
       const newState: State = {
         ...currentState,
         facts: updatedFacts,
-        sessions: [...currentState.sessions, session],
+        settings: { ...currentState.settings, minAccuracy: newMinAccuracy },
+        sessions: allSessions,
         vouchers: voucher
           ? [...currentState.vouchers, voucher]
           : currentState.vouchers,
         streak,
       };
 
+      if (didLevel) setLeveledUp(true);
       saveState(newState);
       setState(newState);
 
@@ -367,6 +390,17 @@ export default function SessionPage() {
                 Has guanyat un val de tablet 🌱
               </p>
             </div>
+            {leveledUp && (
+              <div className="w-full max-w-sm bg-amber-100 border-2 border-amber-300 rounded-2xl p-4 text-center fade-up">
+                <p className="text-2xl">⭐</p>
+                <p className="text-base font-bold text-amber-800">Ets una crack!</p>
+                <p className="text-sm text-amber-700">
+                  A partir d&apos;ara el llindar és del{' '}
+                  <strong>{Math.round((state.settings.minAccuracy) * 100)}%</strong>.
+                  El repte puja!
+                </p>
+              </div>
+            )}
             {newVoucher && (
               <div className="w-full max-w-sm bg-green-100 border-2 border-green-300 rounded-3xl p-6 text-center space-y-3 fade-up">
                 <p className="text-4xl">🎟️</p>
