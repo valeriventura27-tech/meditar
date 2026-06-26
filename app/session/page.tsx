@@ -11,6 +11,8 @@ import {
   generateExtraRoundQuestions,
   parseFact,
   updateMastery,
+  trackingKey,
+  defaultFactStat,
 } from '@/lib/engine';
 import type { State, FactResult, Session, Voucher } from '@/lib/types';
 import { NumericKeypad } from '@/components/NumericKeypad';
@@ -133,11 +135,12 @@ export default function SessionPage() {
         result === 'first' ? playGenial() : playSuccess();
       }
 
-      // Update state
-      const newRecord: AnswerRecord = { factKey: currentKey, result, hintsUsed: hintCount, ms };
+      // Update state — concrete two-digit instances are tracked under their skill key
+      const trackKey = trackingKey(currentKey);
+      const newRecord: AnswerRecord = { factKey: trackKey, result, hintsUsed: hintCount, ms };
       const updatedFacts = {
         ...state.facts,
-        [currentKey]: updateMastery(state.facts[currentKey]!, result, ms),
+        [trackKey]: updateMastery(state.facts[trackKey] ?? defaultFactStat(), result, ms),
       };
       const newState = { ...state, facts: updatedFacts };
       setState(newState);
@@ -158,14 +161,15 @@ export default function SessionPage() {
 
       if (retryCount >= 2) {
         // Show the answer after 2 failed retries
-        const newRecord: AnswerRecord = { factKey: currentKey, result: 'wrong', hintsUsed: hintCount, ms };
+        const trackKey = trackingKey(currentKey);
+        const newRecord: AnswerRecord = { factKey: trackKey, result: 'wrong', hintsUsed: hintCount, ms };
         setWrongAnswer(currentFact.answer);
         setFeedbackMsg(randomFrom(WRONG_MSGS));
         setPhase('feedback-wrong');
 
         const updatedFacts = {
           ...state.facts,
-          [currentKey]: updateMastery(state.facts[currentKey]!, 'wrong', ms),
+          [trackKey]: updateMastery(state.facts[trackKey] ?? defaultFactStat(), 'wrong', ms),
         };
         const newState = { ...state, facts: updatedFacts };
         setState(newState);

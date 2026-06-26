@@ -80,6 +80,41 @@ function MasteryHeatmap({ state }: { state: State }) {
   );
 }
 
+// ── Two-digit × one-digit progress ────────────────────────────────────────────
+function TwoDigitProgress({ state }: { state: State }) {
+  const skills = [2, 3, 4, 5, 6, 7, 8, 9]
+    .map(n => ({ n, stat: state.facts[`b_${n}`] }))
+    .filter(s => s.stat?.introduced);
+
+  if (skills.length === 0) {
+    return (
+      <p className="text-slate-400 text-sm">
+        Encara no introduïdes. Apareixeran quan domini les taules.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-4 gap-3">
+      {skills.map(({ n, stat }) => {
+        const m = stat?.mastery ?? 0;
+        return (
+          <div key={n} className="flex flex-col items-center gap-1">
+            <span className="text-sm font-semibold text-slate-600">×{n}</span>
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500"
+                style={{ width: `${Math.round(m * 100)}%` }}
+              />
+            </div>
+            <span className="text-xs text-slate-400">{Math.round(m * 100)}%</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Top weak facts ────────────────────────────────────────────────────────────
 function TopWeakFacts({ state }: { state: State }) {
   const ordered = getOrderedFactKeys(state.settings);
@@ -313,8 +348,14 @@ function SettingsForm({
       {/* Operations */}
       <div className="space-y-2">
         <p className="text-sm font-semibold text-slate-700">Operacions</p>
-        <div className="flex gap-3">
-          {(['mult', 'div'] as const).map(op => (
+        <div className="flex flex-wrap gap-3">
+          {(
+            [
+              ['mult', '× Multiplicació'],
+              ['div', '÷ Divisió'],
+              ['multBig', '×× Dues xifres'],
+            ] as [keyof Settings['ops'], string][]
+          ).map(([op, label]) => (
             <button
               key={op}
               onClick={() =>
@@ -329,10 +370,14 @@ function SettingsForm({
                   : 'bg-slate-200 text-slate-600'
               }`}
             >
-              {op === 'mult' ? '× Multiplicació' : '÷ Divisió'}
+              {label}
             </button>
           ))}
         </div>
+        <p className="text-xs text-slate-400">
+          «Dues xifres» afegeix multiplicacions com 23 × 4 (es van introduint a
+          poc a poc, quan ja domina les taules).
+        </p>
       </div>
 
       {/* Tables range */}
@@ -598,6 +643,19 @@ export default function AdultsPage() {
               </h3>
               <MasteryHeatmap state={state} />
             </div>
+
+            {/* Two-digit progress */}
+            {state.settings.ops.multBig && (
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
+                <h3 className="font-bold text-slate-800">
+                  Dues xifres × una xifra
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Domini per multiplicador (ex: 23 × 4)
+                </p>
+                <TwoDigitProgress state={state} />
+              </div>
+            )}
 
             {/* Top weak facts */}
             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">

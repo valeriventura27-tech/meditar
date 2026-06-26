@@ -3,17 +3,44 @@ import type { Settings, FactStat, FactResult, ParsedFact } from './types';
 // ── Fact key parsing ──────────────────────────────────────────────────────────
 
 export function parseFact(key: string): ParsedFact {
-  if (key.startsWith('m_')) {
-    const parts = key.slice(2).split('x');
+  if (key.startsWith('m_') || key.startsWith('mb_')) {
+    // m_AxB (table) and mb_AAxB (two-digit × one-digit) share the same shape
+    const parts = key.slice(key.indexOf('_') + 1).split('x');
     const a = parseInt(parts[0], 10);
     const b = parseInt(parts[1], 10);
     return { op: 'mult', a, b, answer: a * b, questionText: `${a} × ${b}` };
+  }
+  if (key.startsWith('b_')) {
+    // Skill key for two-digit × one-digit (no concrete operand yet)
+    const n = parseInt(key.slice(2), 10);
+    return { op: 'mult', a: 0, b: n, answer: 0, questionText: `2 xifres × ${n}` };
   }
   // div: d_P_Q  →  P ÷ Q = P/Q
   const parts = key.split('_');
   const p = parseInt(parts[1], 10);
   const q = parseInt(parts[2], 10);
   return { op: 'div', a: p, b: q, answer: p / q, questionText: `${p} : ${q}` };
+}
+
+// ── Two-digit × one-digit helpers ─────────────────────────────────────────────
+
+// The mastery of a concrete instance (mb_AAxB) is tracked under its skill (b_B).
+export function trackingKey(key: string): string {
+  if (key.startsWith('mb_')) {
+    const b = parseInt(key.slice(key.indexOf('x') + 1), 10);
+    return `b_${b}`;
+  }
+  return key;
+}
+
+// Resolve a skill key into a concrete question with a random two-digit operand.
+export function materializeQuestion(key: string): string {
+  if (key.startsWith('b_')) {
+    const n = parseInt(key.slice(2), 10);
+    const aa = 11 + Math.floor(Math.random() * 89); // 11..99
+    return `mb_${aa}x${n}`;
+  }
+  return key;
 }
 
 // ── Fact key generation ───────────────────────────────────────────────────────
@@ -44,6 +71,13 @@ export function getOrderedFactKeys(settings: Settings): string[] {
         add(`d_${p}_${b}`); // p ÷ b = a
         if (a !== b) add(`d_${p}_${a}`); // p ÷ a = b
       }
+    }
+  }
+
+  // Two-digit × one-digit skills, one per single-digit multiplier (hardest stage).
+  if (settings.ops.multBig) {
+    for (const n of TABLE_ORDER.filter(t => t >= 2 && t <= 9)) {
+      add(`b_${n}`);
     }
   }
 
@@ -187,8 +221,8 @@ export function generateSessionQuestions(
   let last: string | null = null;
   for (let i = 0; i < count; i++) {
     const next = selectNextFact(facts, last, settings);
-    questions.push(next);
-    last = next;
+    questions.push(materializeQuestion(next));
+    last = next; // suppress repetition on the skill, not the concrete instance
   }
   return questions;
 }
@@ -203,7 +237,7 @@ export function generateExtraRoundQuestions(
     .sort((a, b) => (facts[b]?.mastery ?? 0) - (facts[a]?.mastery ?? 0))
     .slice(0, 20);
 
-  if (candidates.length <= count) return candidates;
+  if (candidates.length <= count) return candidates.map(materializeQuestion);
 
   const pool = [...candidates];
   const selected: string[] = [];
@@ -211,7 +245,7 @@ export function generateExtraRoundQuestions(
     const idx = Math.floor(Math.random() * pool.length);
     selected.push(pool.splice(idx, 1)[0]);
   }
-  return selected;
+  return selected.map(materializeQuestion);
 }
 
 // ── Simulation / self-test ────────────────────────────────────────────────────
@@ -227,7 +261,7 @@ export function runEngineSimulation(): {
     minAccuracy: 0.7,
     questionsPerSession: 12,
     softFailEnabled: true,
-    ops: { mult: true, div: false },
+    ops: { mult: true, div: false, multBig: false },
     tablesRange: [2, 9],
     voucherMinutes: 60,
     soundEnabled: false,

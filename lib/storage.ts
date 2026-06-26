@@ -8,7 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   minAccuracy: 0.7,
   questionsPerSession: 12,
   softFailEnabled: true,
-  ops: { mult: true, div: true },
+  ops: { mult: true, div: true, multBig: true },
   tablesRange: [1, 10],
   voucherMinutes: 60,
   soundEnabled: true,
@@ -36,7 +36,11 @@ export function loadState(): State {
     return {
       ...defaultState(),
       ...parsed,
-      settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ...parsed.settings,
+        ops: { ...DEFAULT_SETTINGS.ops, ...parsed.settings?.ops },
+      },
     };
   } catch {
     return defaultState();

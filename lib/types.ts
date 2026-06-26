@@ -47,7 +47,7 @@ export interface Settings {
   minAccuracy: number;
   questionsPerSession: number;
   softFailEnabled: boolean;
-  ops: { mult: boolean; div: boolean };
+  ops: { mult: boolean; div: boolean; multBig: boolean };
   tablesRange: [number, number];
   voucherMinutes: number;
   soundEnabled: boolean;
