@@ -371,10 +371,13 @@ export default function SessionPage() {
   if (phase === 'session-end') {
     const total = answers.length;
     const firstTry = answers.filter(a => a.result === 'first').length;
-    const accuracy = total > 0 ? firstTry / total : 0;
-    const passed = accuracy >= state.settings.minAccuracy;
+    // Use the stored session's verdict — recomputing here would mark a
+    // soft-fail extra round (voucher granted) as "failed", and could clash
+    // with the just-escalated minAccuracy threshold.
+    const lastSession = state.sessions[state.sessions.length - 1];
+    const passed = lastSession?.passed ?? false;
     const newVoucher = state.vouchers.find(
-      v => v.sessionId === state.sessions[state.sessions.length - 1]?.id,
+      v => v.sessionId === lastSession?.id,
     );
 
     return (

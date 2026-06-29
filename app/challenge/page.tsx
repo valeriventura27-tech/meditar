@@ -202,13 +202,14 @@ function Results({
 }) {
   const tie = p1Score === p2Score;
   const p1Wins = p1Score > p2Score;
+  const totalQ = questions.length || QUESTIONS;
 
   const Medal = ({ wins, name, score }: { wins: boolean; name: string; score: number }) => (
     <div className={`flex-1 rounded-3xl p-5 text-center space-y-1 ${wins || tie ? 'bg-green-100 border-2 border-green-300' : 'bg-slate-100 border-2 border-slate-200'}`}>
       <p className="text-4xl">{wins ? '🥇' : tie ? '🤝' : '🥈'}</p>
       <p className="font-extrabold text-xl text-slate-800">{name}</p>
-      <p className="text-4xl font-extrabold text-green-700">{score}<span className="text-xl text-slate-400">/{QUESTIONS}</span></p>
-      <p className="text-sm text-slate-500">{Math.round((score / QUESTIONS) * 100)}% encert</p>
+      <p className="text-4xl font-extrabold text-green-700">{score}<span className="text-xl text-slate-400">/{totalQ}</span></p>
+      <p className="text-sm text-slate-500">{Math.round((score / totalQ) * 100)}% encert</p>
     </div>
   );
 

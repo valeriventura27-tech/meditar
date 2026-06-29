@@ -738,7 +738,7 @@ export default function AdultsPage() {
 
             {/* Top weak facts */}
             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
-              <h3 className="font-bold text-slate-800">Hechos més febles</h3>
+              <h3 className="font-bold text-slate-800">Operacions més febles</h3>
               <TopWeakFacts state={state} />
             </div>
 
