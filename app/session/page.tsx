@@ -16,7 +16,6 @@ import {
 } from '@/lib/engine';
 import type { State, FactResult, Session, Voucher } from '@/lib/types';
 import { NumericKeypad } from '@/components/NumericKeypad';
-import { HintDisplay } from '@/components/HintDisplay';
 import { SessionProgress } from '@/components/SessionProgress';
 import { playSuccess, playGenial, playTryAgain, speak } from '@/lib/sounds';
 
@@ -34,7 +33,6 @@ type Phase =
 interface AnswerRecord {
   factKey: string;
   result: FactResult;
-  hintsUsed: number;
   ms: number;
 }
 
@@ -72,8 +70,6 @@ export default function SessionPage() {
   const [currentInput, setCurrentInput] = useState('');
   const [phase, setPhase] = useState<Phase>('question');
   const [retryCount, setRetryCount] = useState(0);
-  const [showHint, setShowHint] = useState(false);
-  const [hintCount, setHintCount] = useState(0);
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [wrongAnswer, setWrongAnswer] = useState<number | null>(null);
   const [isExtraRound, setIsExtraRound] = useState(false);
@@ -138,7 +134,7 @@ export default function SessionPage() {
 
       // Update state — concrete two-digit instances are tracked under their skill key
       const trackKey = trackingKey(currentKey);
-      const newRecord: AnswerRecord = { factKey: trackKey, result, hintsUsed: hintCount, ms };
+      const newRecord: AnswerRecord = { factKey: trackKey, result, ms };
       const updatedFacts = {
         ...state.facts,
         [trackKey]: updateMastery(state.facts[trackKey] ?? defaultFactStat(), result, ms),
@@ -163,7 +159,7 @@ export default function SessionPage() {
       if (retryCount >= 2) {
         // Show the answer after 2 failed retries
         const trackKey = trackingKey(currentKey);
-        const newRecord: AnswerRecord = { factKey: trackKey, result: 'wrong', hintsUsed: hintCount, ms };
+        const newRecord: AnswerRecord = { factKey: trackKey, result: 'wrong', ms };
         setWrongAnswer(currentFact.answer);
         setFeedbackMsg(randomFrom(WRONG_MSGS));
         setPhase('feedback-wrong');
@@ -198,14 +194,12 @@ export default function SessionPage() {
         }, 1000);
       }
     }
-  }, [state, currentFact, currentKey, currentInput, retryCount, hintCount, isExtraRound]);
+  }, [state, currentFact, currentKey, currentInput, retryCount, isExtraRound]);
 
   const advanceToNext = useCallback(
     (lastRecord: AnswerRecord, currentState: State) => {
       setCurrentInput('');
       setRetryCount(0);
-      setShowHint(false);
-      setHintCount(0);
       setWrongAnswer(null);
 
       if (isExtraRound) {
@@ -547,22 +541,6 @@ export default function SessionPage() {
                   )}
                 </span>
               </div>
-
-              {/* Hint */}
-              {showHint && (
-                <div className="w-full fade-up">
-                  <HintDisplay fact={currentFact} />
-                </div>
-              )}
-
-              {!showHint && (
-                <button
-                  onClick={() => { setShowHint(true); setHintCount(h => h + 1); }}
-                  className="text-amber-600 font-semibold text-lg underline"
-                >
-                  Vols una pista? 💡
-                </button>
-              )}
             </>
           )}
 

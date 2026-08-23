@@ -1,4 +1,4 @@
-const BUILD = '8b66cb9be0ce'; // replaced at build time
+const BUILD = '523da87c84b3'; // replaced at build time
 const CACHE = `jdn-v${BUILD}`;
 const STATIC = `jdn-static-v${BUILD}`;
 
